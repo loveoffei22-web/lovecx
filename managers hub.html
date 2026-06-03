@@ -2031,7 +2031,7 @@ function AllComplaints({tickets,onUpdate,onBulkUpdate,onBatchUpdate,onDelete,sho
                   <th style={{width:36,padding:'8px 6px'}}>
                     <input type="checkbox" checked={allPageSel} onChange={toggleAll} style={{cursor:'pointer',width:14,height:14,accentColor:'var(--ek-gold)'}}/>
                   </th>
-                  <th>Date</th><th>Ticket</th><th>Time</th><th>Customer</th><th>Phone</th><th>BU</th><th style={{minWidth:120}}>CATEGORY✏</th><th>STATUS ↻</th><th>RESPONSIBLE✏</th><th style={{minWidth:160}}>NOTE✏</th><th>Details</th>
+                  <th>Date</th><th>Ticket</th><th>Time</th><th>Customer</th><th>Phone</th><th>BU</th><th style={{minWidth:120}}>CATEGORY✏</th><th>STATUS ↻</th><th>RESPONSIBLE✏</th><th style={{minWidth:200}}>DESCRIPTION / NOTE✏</th><th>Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -2078,7 +2078,11 @@ function AllComplaints({tickets,onUpdate,onBulkUpdate,onBatchUpdate,onDelete,sho
                             ?<div style={{position:'absolute',top:0,left:0,zIndex:200,background:'var(--surface)',border:'1.5px solid var(--ek-gold)',borderRadius:6,boxShadow:'0 4px 16px rgba(0,0,0,.4)',minWidth:220}}>
                                 <textarea autoFocus value={cellEdit.val} rows={3} onChange={function(ev){setCellEdit(Object.assign({},cellEdit,{val:ev.target.value}));}} onBlur={function(){commitCellM(t);}} onKeyDown={function(ev){xlsNavM(ev,t,'note',paged);}} style={{width:'100%',border:'none',background:'transparent',padding:'6px 8px',font:'500 11px Sora,sans-serif',color:'var(--fg)',outline:'none',resize:'vertical',display:'block'}} placeholder="Action taken…"/>
                               </div>
-                            :<>{t.note||<span style={{opacity:.35,fontStyle:'italic'}}>—</span>}{!readOnly&&<span className="xls-hint">dbl-click</span>}</>
+                            :<div style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                              <span style={{color:'var(--text)',fontWeight:600}}>{(t.issue||'—').slice(0,120)}</span>
+                              {t.note&&<span style={{color:'var(--muted)',fontSize:10,marginLeft:6}}>· {t.note.slice(0,60)}</span>}
+                              {!readOnly&&<span className="xls-hint">dbl-click</span>}
+                            </div>
                           }
                         </td>
                         <td><span style={{font:'700 10px Sora,sans-serif',color:'var(--ek-gold)'}}>{isExp?'▲ close':'▼ details'}</span></td>
@@ -4484,8 +4488,14 @@ function CloudSync({tickets,setTickets,showToast}){
           var d=t.received||t.receivedAt||t.createdAt||t.date||t.Date||t.dateCreated||t.receivedDate||t.Created||t.timestamp||'';
           return d?Object.assign({},t,{created:d}):t;
         });
-        const r=dedupTickets(merged,normalised);
-        merged=r.merged;r.kept.forEach(function(t){merged.push(t);count++;});count+=(r.updated||0);
+        // Log-only mode: never overwrite existing ticket status/note — only add brand new tickets
+        var existingNums=new Set(merged.map(function(x){return _norm(x.num||'');}));
+        var existingIds=new Set(merged.map(function(x){return x.id||'';}));
+        normalised.forEach(function(t){
+          var n=_norm(t.num||'');
+          if((n&&existingNums.has(n))||(t.id&&existingIds.has(t.id)))return;
+          merged.push(t);if(n)existingNums.add(n);if(t.id)existingIds.add(t.id);count++;
+        });
       });
       persistTickets(merged);setTickets(merged);
       const now=new Date().toLocaleString('en-GB',{timeZone:'Africa/Lagos'});

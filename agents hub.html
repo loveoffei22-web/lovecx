@@ -1462,7 +1462,7 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
   <th style={{width:36,textAlign:'center',padding:'0 6px'}}>
     <input type="checkbox" checked={allPagedSelected} ref={function(el){if(el)el.indeterminate=somePagedSelected;}} onChange={toggleAll} style={{cursor:'pointer',width:14,height:14,accentColor:'var(--ek-gold)'}}/>
   </th>
-  <th style={{width:36}}>#</th><th style={{width:100}}>TICKET</th><th style={{width:80}}>TIME</th><th style={{width:72}}>DATE</th><th style={{width:160}}>CUSTOMER</th><th style={{width:130}}>PHONE</th><th style={{width:72}}>BU</th><th style={{width:160}}>CATEGORY</th><th style={{width:110}}>STATUS</th><th>ACTION TAKEN</th>
+  <th style={{width:36}}>#</th><th style={{width:100}}>TICKET</th><th style={{width:80}}>TIME</th><th style={{width:72}}>DATE</th><th style={{width:160}}>CUSTOMER</th><th style={{width:130}}>PHONE</th><th style={{width:72}}>BU</th><th style={{width:160}}>CATEGORY</th><th style={{width:110}}>STATUS</th><th>DESCRIPTION / ACTION TAKEN</th>
 </tr></thead>
               <tbody>
                 {paged.map(function(t,i){const isEx=expanded===t.id;const idx=safePage*PAGE+i+1;const e=getEdit(t);return(
@@ -1488,10 +1488,14 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
                           :t.status==='resolved'?<span className="st-res">RESOLVED</span>:t.status==='progress'?<span className="st-prg">IN PROGRESS</span>:<span className="st-unr">UNRESOLVED</span>
                         }
                       </td>
-                      <td className={'xls-cell'+(cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?' xls-editing':'')} style={{fontSize:13,color:'var(--text2)',maxWidth:140,overflow:cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?'visible':'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',padding:cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?0:undefined}} onDoubleClick={function(ev){ev.stopPropagation();setCellEdit({id:t.id,field:'note',val:t.note||''});}} onClick={function(ev){if(cellEdit&&cellEdit.id===t.id)ev.stopPropagation();else toggleExpand(t);}}>
+                      <td className={'xls-cell'+(cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?' xls-editing':'')} style={{fontSize:13,color:'var(--text2)',maxWidth:220,overflow:cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?'visible':'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',padding:cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?0:undefined}} onDoubleClick={function(ev){ev.stopPropagation();setCellEdit({id:t.id,field:'note',val:t.note||''});}} onClick={function(ev){if(cellEdit&&cellEdit.id===t.id)ev.stopPropagation();else toggleExpand(t);}}>
                         {cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'
                           ?<textarea className="xls-inp" autoFocus value={cellEdit.val} onChange={function(ev){setCellEdit(Object.assign({},cellEdit,{val:ev.target.value}));}} onBlur={function(){commitCellA(t);}} onKeyDown={function(ev){if(ev.key!=='Enter')xlsNavA(ev,t,'note',paged);}}/>
-                          :<>{t.note||'—'} <span style={{color:'var(--ek-gold)',cursor:'pointer',fontSize:10}}>▼</span></>
+                          :<div style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                            <span style={{color:'var(--text)',fontWeight:600}}>{(t.issue||'—').slice(0,120)}</span>
+                            {t.note&&<span style={{color:'var(--muted)',fontSize:11,marginLeft:6}}>· {t.note.slice(0,60)}</span>}
+                            <span style={{color:'var(--ek-gold)',cursor:'pointer',fontSize:10,marginLeft:4}}>▼</span>
+                          </div>
                         }
                       </td>
                     </tr>
@@ -2398,8 +2402,14 @@ function CloudSync({agent,tickets,setTickets,showToast,agentShift}){
           var d=t.received||t.receivedAt||t.createdAt||t.date||t.Date||t.dateCreated||t.receivedDate||t.Created||t.timestamp||'';
           return d?Object.assign({},t,{created:d}):t;
         });
-        var r=dedupTickets(merged,normalised);
-        merged=r.merged;r.kept.forEach(function(t){merged.push(t);added++;});added+=(r.updated||0);
+        // Log-only mode: never overwrite existing ticket status/note — only add brand new tickets
+        var existingNums=new Set(merged.map(function(x){return _norm(x.num||'');}));
+        var existingIds=new Set(merged.map(function(x){return x.id||'';}));
+        normalised.forEach(function(t){
+          var n=_norm(t.num||'');
+          if((n&&existingNums.has(n))||(t.id&&existingIds.has(t.id)))return;
+          merged.push(t);if(n)existingNums.add(n);if(t.id)existingIds.add(t.id);added++;
+        });
       });
       function persistTickets(tix){try{localStorage.setItem('ek_v2_tickets',JSON.stringify(tix));}catch(e){console.warn('persistTickets failed',e);}}
       persistTickets(merged);setTickets(merged);
