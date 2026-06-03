@@ -448,6 +448,15 @@ function loadTix(id){
         });
       }
     }catch(e){}
+    // Migrate: backfill loggedAt from ticket ID timestamp for older tickets
+    byAgent=byAgent.map(function(t){
+      if(t.loggedAt)return t;
+      // ID format: tk_<Date.now()>_<random> — extract the log timestamp
+      var m=String(t.id||'').match(/^tk_(\d{10,15})_/);
+      if(m){var ts=parseInt(m[1],10);if(!isNaN(ts))return Object.assign({},t,{loggedAt:new Date(ts).toISOString()});}
+      // Fallback: use created date so the ticket is at least visible somewhere
+      return Object.assign({},t,{loggedAt:t.created||t.receivedAt||new Date().toISOString()});
+    });
     // Final dedup by ticket number (safety net)
     var seenNums={};
     return byAgent.filter(function(t){
