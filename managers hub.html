@@ -2133,8 +2133,7 @@ function AllComplaints({tickets,onUpdate,onBulkUpdate,onBatchUpdate,onDelete,sho
                             {/* Complaint description — editable */}
                             <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
                               <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION ✏</div>
-                              <textarea className="inp" rows={3} value={isEditing?editVals.issue||'':(t.issue||'')} readOnly={!isEditing} onClick={function(e){e.stopPropagation();if(!isEditing)openEdit(t);}} onChange={function(e){e.stopPropagation();setEditVals(function(p){return Object.assign({},p,{issue:e.target.value});});}} placeholder="Describe the complaint…" style={{resize:'vertical',fontSize:11,marginBottom:0,cursor:isEditing?'text':'pointer',opacity:isEditing?1:.85}}/>
-                              {!isEditing&&<div style={{font:'500 9px Sora,sans-serif',color:'var(--muted)',marginTop:3}}>Click to edit</div>}
+                              <textarea className="inp" rows={3} value={getF(t,'issue')||''} onClick={function(e){e.stopPropagation();}} onChange={function(e){e.stopPropagation();setF(t.id,'issue',e.target.value);}} placeholder="Describe the complaint…" style={{resize:'vertical',fontSize:11,marginBottom:0}}/>
                             </div>
                             {/* Editable section */}
                             <div style={{padding:'14px 16px',background:'rgba(0,0,0,.15)'}}>
