@@ -367,6 +367,7 @@ const NAV=[
   {id:'slot',     icon:'📤',label:'Slot Reports'},
   {id:'data',     icon:'📁',label:'Export / Import'},
   {id:'sync',     icon:'☁',label:'Cloud Sync'},
+  {id:'settings', icon:'⚙',label:'Settings'},
 ];
 const SHIFT_LABELS={day:{emoji:'☀️',text:'Day Shift',sub:'08:00 – 17:00',color:'#FCD34D',bg:'rgba(252,211,77,.15)'},shadow:{emoji:'🌙',text:'Night Shift',sub:'17:01 prev – 17:00',color:'#818CF8',bg:'rgba(129,140,248,.15)'},night:{emoji:'🌙',text:'Night Shift',sub:'17:01 prev – 17:00',color:'#818CF8',bg:'rgba(129,140,248,.15)'},off:{emoji:'🔴',text:'Day Off',sub:'',color:'#6B7280',bg:'rgba(107,114,128,.12)'},leave:{emoji:'⛱',text:'Leave',sub:'',color:'#34D399',bg:'rgba(52,211,153,.12)'}};
 
@@ -2706,6 +2707,61 @@ function TicketsScreen({agent,tickets,allTix,onEdit,onUpdate,onDelete,showToast,
     </div>
   );
 }
+// ── AGENT SETTINGS ───────────────────────────────────────────────────
+function AgentSettings({agent,tickets,setTickets,showToast}){
+  function onDedup(){
+    var all=JSON.parse(localStorage.getItem('ek_v2_tickets')||'[]');
+    var seen={};
+    var deduped=all.filter(function(t){
+      var n=String(t.num||'').trim().toLowerCase();
+      if(!n)return true;
+      if(seen[n])return false;
+      seen[n]=true;return true;
+    });
+    var removed=all.length-deduped.length;
+    if(!removed){showToast('No duplicates found ✓');return;}
+    if(!window.confirm('Remove '+removed+' duplicate ticket'+(removed>1?'s':'')+' from the shared store? This cannot be undone.'))return;
+    localStorage.setItem('ek_v2_tickets',JSON.stringify(deduped));
+    setTickets(deduped.filter(function(t){return t.agent===agent.id||t.agentId===agent.id;}));
+    showToast('🧹 Removed '+removed+' duplicate'+(removed>1?'s':'')+' ✅');
+  }
+  function onPurge(){
+    if(!window.confirm('Delete ALL tickets dated before May 1 2026 (test data)? This cannot be undone.'))return;
+    var all=JSON.parse(localStorage.getItem('ek_v2_tickets')||'[]');
+    var kept=all.filter(function(t){var d=t.loggedAt||t.created||'';return d?d>='2026-05-01':true;});
+    var removed=all.length-kept.length;
+    localStorage.setItem('ek_v2_tickets',JSON.stringify(kept));
+    setTickets(kept.filter(function(t){return t.agent===agent.id||t.agentId===agent.id;}));
+    showToast('🗑 Purged '+removed+' pre-May test ticket'+(removed!==1?'s':'')+' ✅');
+  }
+  return(
+    <div>
+      <div className="topbar">
+        <div><div className="eyebrow">SETTINGS</div><div className="page-title">Data Management</div></div>
+        <LiveClock/>
+      </div>
+      <div className="pad">
+        <div style={{maxWidth:420}}>
+          <div style={{font:'700 11px Sora,sans-serif',color:'var(--muted)',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:12}}>Data Cleanup</div>
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            <button className="btn" onClick={onDedup} style={{padding:'14px 18px',background:'rgba(59,130,246,.12)',border:'1px solid rgba(59,130,246,.3)',color:'#93C5FD',borderRadius:10,font:'700 13px Sora,sans-serif',cursor:'pointer',textAlign:'left',display:'flex',flexDirection:'column',gap:4}}>
+              <span>🧹 Remove Duplicate Tickets</span>
+              <span style={{font:'500 11px Sora,sans-serif',color:'var(--muted)'}}>Scans all agents' tickets and removes entries with the same ticket number</span>
+            </button>
+            <button className="btn" onClick={onPurge} style={{padding:'14px 18px',background:'rgba(239,68,68,.1)',border:'1px solid rgba(239,68,68,.3)',color:'#FCA5A5',borderRadius:10,font:'700 13px Sora,sans-serif',cursor:'pointer',textAlign:'left',display:'flex',flexDirection:'column',gap:4}}>
+              <span>🗑 Purge Pre-May 2026 Test Data</span>
+              <span style={{font:'500 11px Sora,sans-serif',color:'var(--muted)'}}>Permanently deletes all tickets dated before May 1 2026</span>
+            </button>
+          </div>
+          <div style={{marginTop:16,padding:'10px 14px',background:'rgba(255,199,44,.06)',border:'1px solid rgba(255,199,44,.18)',borderRadius:8,font:'500 10px/1.6 Sora,sans-serif',color:'var(--muted)'}}>
+            ⚠ These actions affect the shared store and cannot be undone. Changes are visible to all agents immediately.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App(){
   const[agent,setAgent]=useState(null);
   const[screen,setScreen]=useState('dashboard');
@@ -2862,6 +2918,7 @@ function App(){
     photos:   <ProfilePhotos showToast={showToast}/>,
     data:     <DataScreen agent={agent} tickets={viewTix} setTickets={setTickets} showToast={showToast} agentShift={agentShift}/>,
     sync:     <CloudSync agent={agent} tickets={tickets} setTickets={setTickets} showToast={showToast} agentShift={agentShift}/>,
+    settings: <AgentSettings agent={agent} tickets={tickets} setTickets={setTickets} showToast={showToast}/>,
   };
 
   return(
