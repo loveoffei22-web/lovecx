@@ -4961,8 +4961,22 @@ function App(){
     rpt_monthly:   <ReportMonthly tickets={tickets} onBulkUpdate={function(ids,patch){setTickets(function(prev){const next=prev.map(function(t){return ids.includes(t.id)?Object.assign({},t,patch):t;});persistTickets(next);return next;});}} showToast={showToast}/>,
   };
 
+  const SCREEN_ORDER=['dashboard','daily','all','log','cumulative','analytics','slot','agents','sync','data','rpt_verify','rpt_anomaly','rpt_executive','rpt_weekly','rpt_monthly'];
+
+  // Swipe left/right to navigate between screens
+  const swipeRef=useRef({});
+  function onTouchStart(e){swipeRef.current.x=e.touches[0].clientX;swipeRef.current.y=e.touches[0].clientY;}
+  function onTouchEnd(e){
+    const dx=e.changedTouches[0].clientX-swipeRef.current.x;
+    const dy=e.changedTouches[0].clientY-swipeRef.current.y;
+    if(Math.abs(dx)<50||Math.abs(dx)<Math.abs(dy)*1.5)return; // too short or too vertical
+    const idx=SCREEN_ORDER.indexOf(screen);
+    if(dx<0&&idx<SCREEN_ORDER.length-1)setScreen(SCREEN_ORDER[idx+1]); // swipe left → next
+    if(dx>0&&idx>0)setScreen(SCREEN_ORDER[idx-1]);                      // swipe right → prev
+  }
+
   return(
-    <div>
+    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <Nav active={screen} onChange={setScreen} collapsed={collapsed} onToggle={()=>setCollapsed(c=>!c)} onSettings={()=>setShowSettings(true)} onSignOut={onSignOut} onReset={onReset} user="Love Offei" activeMonth={activeMonth} setActiveMonth={setActiveMonth} availMonths={availMonths} currentYM={currentYM} tickets={tickets} readOnly={readOnly}/>
       <main className={'main'+(collapsed?' nc':'')} style={{paddingLeft:W}}>
         {screens[screen]||screens.dashboard}
