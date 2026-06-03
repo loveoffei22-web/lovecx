@@ -1462,7 +1462,7 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
   <th style={{width:36,textAlign:'center',padding:'0 6px'}}>
     <input type="checkbox" checked={allPagedSelected} ref={function(el){if(el)el.indeterminate=somePagedSelected;}} onChange={toggleAll} style={{cursor:'pointer',width:14,height:14,accentColor:'var(--ek-gold)'}}/>
   </th>
-  <th style={{width:36}}>#</th><th style={{width:100}}>TICKET</th><th style={{width:80}}>TIME</th><th style={{width:72}}>DATE</th><th style={{width:160}}>CUSTOMER</th><th style={{width:130}}>PHONE</th><th style={{width:72}}>BU</th><th style={{width:160}}>CATEGORY</th><th style={{width:110}}>STATUS</th><th>DESCRIPTION / ACTION TAKEN</th>
+  <th style={{width:36}}>#</th><th style={{width:100}}>TICKET</th><th style={{width:80}}>TIME</th><th style={{width:72}}>DATE</th><th style={{width:160}}>CUSTOMER</th><th style={{width:130}}>PHONE</th><th style={{width:72}}>BU</th><th style={{width:160}}>CATEGORY</th><th style={{width:110}}>STATUS</th><th style={{width:200}}>DESCRIPTION</th><th>ACTION TAKEN</th>
 </tr></thead>
               <tbody>
                 {paged.map(function(t,i){const isEx=expanded===t.id;const idx=safePage*PAGE+i+1;const e=getEdit(t);return(
@@ -1488,19 +1488,16 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
                           :t.status==='resolved'?<span className="st-res">RESOLVED</span>:t.status==='progress'?<span className="st-prg">IN PROGRESS</span>:<span className="st-unr">UNRESOLVED</span>
                         }
                       </td>
-                      <td className={'xls-cell'+(cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?' xls-editing':'')} style={{fontSize:13,color:'var(--text2)',maxWidth:220,overflow:cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?'visible':'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',padding:cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?0:undefined}} onDoubleClick={function(ev){ev.stopPropagation();setCellEdit({id:t.id,field:'note',val:t.note||''});}} onClick={function(ev){if(cellEdit&&cellEdit.id===t.id)ev.stopPropagation();else toggleExpand(t);}}>
+                      <td style={{fontSize:12,color:'var(--text)',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontWeight:600}} onClick={function(){toggleExpand(t);}}>{t.issue||'—'}</td>
+                      <td className={'xls-cell'+(cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?' xls-editing':'')} style={{fontSize:12,color:'var(--text2)',maxWidth:180,overflow:cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?'visible':'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',padding:cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?0:undefined}} onDoubleClick={function(ev){ev.stopPropagation();setCellEdit({id:t.id,field:'note',val:t.note||''});}} onClick={function(ev){if(cellEdit&&cellEdit.id===t.id)ev.stopPropagation();else toggleExpand(t);}}>
                         {cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'
                           ?<textarea className="xls-inp" autoFocus value={cellEdit.val} onChange={function(ev){setCellEdit(Object.assign({},cellEdit,{val:ev.target.value}));}} onBlur={function(){commitCellA(t);}} onKeyDown={function(ev){if(ev.key!=='Enter')xlsNavA(ev,t,'note',paged);}}/>
-                          :<div style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                            <span style={{color:'var(--text)',fontWeight:600}}>{(t.issue||'—').slice(0,120)}</span>
-                            {t.note&&<span style={{color:'var(--muted)',fontSize:11,marginLeft:6}}>· {t.note.slice(0,60)}</span>}
-                            <span style={{color:'var(--ek-gold)',cursor:'pointer',fontSize:10,marginLeft:4}}>▼</span>
-                          </div>
+                          :<>{t.note||<span style={{opacity:.4}}>—</span>} <span style={{color:'var(--ek-gold)',cursor:'pointer',fontSize:10}}>▼</span></>
                         }
                       </td>
                     </tr>
                   </React.Fragment>);})}
-                {!paged.length&&<tr><td colSpan={12} style={{padding:'32px',textAlign:'center',color:'var(--muted)'}}>No tickets match your filters.</td></tr>}
+                {!paged.length&&<tr><td colSpan={13} style={{padding:'32px',textAlign:'center',color:'var(--muted)'}}>No tickets match your filters.</td></tr>}
               </tbody>
             </table>
           </div>
