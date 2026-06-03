@@ -1,0 +1,212 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "_flowName": "EKEDP – Push Ticket Status to SharePoint",
+  "_description": "Receives the JSON payload from the EKEDP Power App (Managers Hub) and upserts each ticket as a SharePoint list item. Triggered via HTTP POST.",
+
+  "trigger": {
+    "type": "Request",
+    "kind": "Http",
+    "inputs": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "pushedAt":  { "type": "string" },
+          "date":      { "type": "string" },
+          "matthew":   { "type": "array", "items": { "$ref": "#/definitions/ticket" } },
+          "racheal":   { "type": "array", "items": { "$ref": "#/definitions/ticket" } },
+          "tomina":    { "type": "array", "items": { "$ref": "#/definitions/ticket" } },
+          "esther":    { "type": "array", "items": { "$ref": "#/definitions/ticket" } },
+          "loveth":    { "type": "array", "items": { "$ref": "#/definitions/ticket" } }
+        }
+      }
+    }
+  },
+
+  "definitions": {
+    "ticket": {
+      "type": "object",
+      "properties": {
+        "id":       { "type": "string" },
+        "num":      { "type": "string" },
+        "name":     { "type": "string" },
+        "phone":    { "type": "string" },
+        "meter":    { "type": "string" },
+        "addr":     { "type": "string" },
+        "bu":       { "type": "string" },
+        "category": { "type": "string" },
+        "issue":    { "type": "string" },
+        "resp":     { "type": "string" },
+        "status":   { "type": "string", "enum": ["resolved", "progress", "unresolved"] },
+        "note":     { "type": "string" },
+        "agent":    { "type": "string" },
+        "created":  { "type": "string" },
+        "time":     { "type": "string" }
+      }
+    }
+  },
+
+  "_build_steps": [
+    {
+      "step": 1,
+      "action": "HTTP Trigger (When an HTTP request is received)",
+      "settings": {
+        "method": "POST",
+        "request_body_json_schema": "paste the schema from the trigger block above"
+      },
+      "note": "Copy the trigger URL — paste it as the Push URL in Managers Hub → Cloud Sync."
+    },
+    {
+      "step": 2,
+      "action": "Initialize variable — agentKeys",
+      "type": "Initialize variable",
+      "settings": {
+        "name": "agentKeys",
+        "type": "Array",
+        "value": ["matthew", "racheal", "tomina", "esther", "loveth"]
+      }
+    },
+    {
+      "step": 3,
+      "action": "Apply to each — loop over agentKeys",
+      "foreach": "@variables('agentKeys')",
+      "inner_steps": [
+        {
+          "step": "3a",
+          "action": "Condition — does this agent key exist in the body?",
+          "expression": "@contains(triggerBody(), items('Apply_to_each'))",
+          "if_true": [
+            {
+              "step": "3b",
+              "action": "Apply to each 2 — loop over tickets for this agent",
+              "foreach": "@triggerBody()[items('Apply_to_each')]",
+              "inner_steps": [
+                {
+                  "step": "3c",
+                  "action": "Get items — check if ticket already exists in SharePoint",
+                  "connector": "SharePoint",
+                  "operation": "Get items",
+                  "settings": {
+                    "site_address": "https://YOUR_TENANT.sharepoint.com/sites/EKEDP",
+                    "list_name": "EKEDP Ticket Tracker",
+                    "filter_query": "TicketNumber eq '@{items('Apply_to_each_2')?['num']}'"
+                  }
+                },
+                {
+                  "step": "3d",
+                  "action": "Condition — does item already exist?",
+                  "expression": "@greater(length(outputs('Get_items')?['body/value']), 0)",
+                  "if_true": [
+                    {
+                      "step": "3d-i",
+                      "action": "Update item — patch status + note",
+                      "connector": "SharePoint",
+                      "operation": "Update item",
+                      "settings": {
+                        "site_address": "https://YOUR_TENANT.sharepoint.com/sites/EKEDP",
+                        "list_name": "EKEDP Ticket Tracker",
+                        "id": "@{first(outputs('Get_items')?['body/value'])['ID']}",
+                        "columns": {
+                          "Title":           "@{items('Apply_to_each_2')?['num']}",
+                          "Status":          "@{items('Apply_to_each_2')?['status']}",
+                          "ResolutionNote":  "@{items('Apply_to_each_2')?['note']}",
+                          "Responsible":     "@{items('Apply_to_each_2')?['resp']}",
+                          "LastUpdated":     "@{utcNow()}",
+                          "Agent":           "@{items('Apply_to_each')}",
+                          "Category":        "@{items('Apply_to_each_2')?['category']}"
+                        }
+                      }
+                    }
+                  ],
+                  "if_false": [
+                    {
+                      "step": "3d-ii",
+                      "action": "Create item — new ticket",
+                      "connector": "SharePoint",
+                      "operation": "Create item",
+                      "settings": {
+                        "site_address": "https://YOUR_TENANT.sharepoint.com/sites/EKEDP",
+                        "list_name": "EKEDP Ticket Tracker",
+                        "columns": {
+                          "Title":           "@{items('Apply_to_each_2')?['num']}",
+                          "TicketNumber":    "@{items('Apply_to_each_2')?['num']}",
+                          "CustomerName":    "@{items('Apply_to_each_2')?['name']}",
+                          "Phone":           "@{items('Apply_to_each_2')?['phone']}",
+                          "MeterNumber":     "@{items('Apply_to_each_2')?['meter']}",
+                          "Address":         "@{items('Apply_to_each_2')?['addr']}",
+                          "BusinessUnit":    "@{items('Apply_to_each_2')?['bu']}",
+                          "Category":        "@{items('Apply_to_each_2')?['category']}",
+                          "Issue":           "@{items('Apply_to_each_2')?['issue']}",
+                          "Responsible":     "@{items('Apply_to_each_2')?['resp']}",
+                          "Status":          "@{items('Apply_to_each_2')?['status']}",
+                          "ResolutionNote":  "@{items('Apply_to_each_2')?['note']}",
+                          "Agent":           "@{items('Apply_to_each')}",
+                          "ReceivedDate":    "@{items('Apply_to_each_2')?['created']}",
+                          "ReceivedTime":    "@{items('Apply_to_each_2')?['time']}",
+                          "LastUpdated":     "@{utcNow()}"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 4,
+      "action": "Response — return 200 OK to the app",
+      "type": "Response",
+      "settings": {
+        "statusCode": 200,
+        "headers": { "Content-Type": "application/json" },
+        "body": {
+          "status": "ok",
+          "pushedAt": "@{triggerBody()?['pushedAt']}",
+          "date": "@{triggerBody()?['date']}"
+        }
+      }
+    }
+  ],
+
+  "_sharepoint_list_columns": {
+    "description": "Create these columns in your SharePoint list named 'EKEDP Ticket Tracker'",
+    "columns": [
+      { "internal_name": "Title",          "display_name": "Title",           "type": "Single line of text", "note": "Maps to Ticket Number — required by SP" },
+      { "internal_name": "TicketNumber",   "display_name": "Ticket Number",   "type": "Single line of text" },
+      { "internal_name": "CustomerName",   "display_name": "Customer Name",   "type": "Single line of text" },
+      { "internal_name": "Phone",          "display_name": "Phone",           "type": "Single line of text" },
+      { "internal_name": "MeterNumber",    "display_name": "Meter Number",    "type": "Single line of text" },
+      { "internal_name": "Address",        "display_name": "Address",         "type": "Single line of text" },
+      { "internal_name": "BusinessUnit",   "display_name": "Business Unit",   "type": "Choice", "choices": ["ISLAND","IJORA","MUSHIN","AJAH","LEKKI","APAPA","AGBARA","AJELE","OJO","FESTAC","ORILE","IBEJU-LEKKI"] },
+      { "internal_name": "Category",       "display_name": "Category",        "type": "Single line of text" },
+      { "internal_name": "Issue",          "display_name": "Issue / Note",    "type": "Multiple lines of text" },
+      { "internal_name": "Responsible",    "display_name": "Responsible",     "type": "Single line of text" },
+      { "internal_name": "Status",         "display_name": "Status",          "type": "Choice", "choices": ["unresolved","progress","resolved"] },
+      { "internal_name": "ResolutionNote", "display_name": "Resolution Note", "type": "Multiple lines of text" },
+      { "internal_name": "Agent",          "display_name": "Agent ID",        "type": "Single line of text" },
+      { "internal_name": "ReceivedDate",   "display_name": "Received Date",   "type": "Single line of text" },
+      { "internal_name": "ReceivedTime",   "display_name": "Received Time",   "type": "Single line of text" },
+      { "internal_name": "LastUpdated",    "display_name": "Last Updated",    "type": "Date and Time" }
+    ]
+  },
+
+  "_quick_build_guide": {
+    "url": "https://make.powerautomate.com",
+    "steps": [
+      "1. New flow → Instant cloud flow → Skip (you'll add the trigger manually)",
+      "2. Add trigger: 'When an HTTP request is received' — Method = POST, paste the JSON Schema from the trigger block above",
+      "3. Add: Initialize variable → name=agentKeys, type=Array, value=[\"matthew\",\"racheal\",\"tomina\",\"esther\",\"loveth\"]",
+      "4. Add: Apply to each → Current item = agentKeys variable",
+      "5. Inside loop: Add Condition → contains(triggerBody(), items('Apply_to_each'))",
+      "6. In YES branch: Add Apply to each 2 → triggerBody()[items('Apply_to_each')]",
+      "7. Inside inner loop: SharePoint 'Get items' → filter: TicketNumber eq '@{items('Apply_to_each_2')?['num']}'",
+      "8. Add Condition → length(body('Get_items')?['value']) > 0",
+      "9. YES = SharePoint 'Update item' with Status, ResolutionNote, LastUpdated, Responsible",
+      "10. NO  = SharePoint 'Create item' with all columns from _sharepoint_list_columns",
+      "11. After both loops: Add 'Response' action → Status 200, body = {status:'ok'}",
+      "12. Save → copy the HTTP POST URL → paste it in Managers Hub → Cloud Sync → Push URL"
+    ]
+  }
+}
