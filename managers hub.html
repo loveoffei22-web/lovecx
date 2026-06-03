@@ -2926,9 +2926,6 @@ function shiftWatDate(t){
       if(isNaN(d.getTime()))return null;
     }
     var wat=new Date(d.toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
-    var origMonth=wat.getMonth();
-    if(wat.getHours()<17)wat.setDate(wat.getDate()-1);
-    if(wat.getMonth()!==origMonth)wat.setDate(wat.getDate()+1);
     return wat.getFullYear()+'-'+String(wat.getMonth()+1).padStart(2,'0')+'-'+String(wat.getDate()).padStart(2,'0');
   }catch(e){return null;}
 }
