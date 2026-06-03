@@ -504,7 +504,7 @@ function loadShifts(){
 function saveShifts(s){localStorage.setItem(EK_SHIFTS_KEY,JSON.stringify(s));}
 
 // Ticket persistence helpers
-function persistTickets(tix){window.EK_TICKETS=tix;localStorage.setItem('ek_v2_tickets',JSON.stringify(tix));}
+function persistTickets(tix){window.EK_TICKETS=tix;try{localStorage.setItem('ek_v2_tickets',JSON.stringify(tix));}catch(e){console.warn('persistTickets failed',e);}}
 // De-dup signature: ticket# + name + complaint/issue text (normalized).
 // Two tickets are considered the same if their number is identical AND
 // either the customer name OR the complaint description matches.
@@ -4830,7 +4830,11 @@ function App(){
       }
     }
     window.addEventListener('storage',onStorage);
-    return function(){window.removeEventListener('storage',onStorage);};
+    // Poll every 15s as fallback — storage events don't fire for same-tab writes
+    var poll=setInterval(function(){
+      try{var raw=localStorage.getItem('ek_v2_tickets');if(raw){var t=JSON.parse(raw);if(Array.isArray(t)){setTickets(t);window.EK_TICKETS=t;}}}catch(e){}
+    },15000);
+    return function(){window.removeEventListener('storage',onStorage);clearInterval(poll);};
   },[]);
 
   // Auto theme watcher — checks every minute

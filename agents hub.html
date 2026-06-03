@@ -498,7 +498,7 @@ function saveTix(id,tix){
 function loadShifts(){try{return JSON.parse(localStorage.getItem('ek_v2_shifts')||'{}');}catch{return{};}}
 // De-dup: ticket number is the sole key when present; fall back to full sig only for numberless tickets
 function _norm(s){return String(s||'').toLowerCase().replace(/\s+/g,' ').replace(/[^a-z0-9 ]/g,'').trim();}
-function ticketSig(t){return _norm(t.name)+'|'+_norm(t.issue||t.complaint||t.category||'');}
+function ticketSig(t){return _norm(t.num||'')+'|'+_norm(t.name)+'|'+_norm(t.issue||t.complaint||t.category||'');}
 function dedupTickets(existing,incoming){
   // Compare by ticket number (t.num) + status:
   // - same num, same status → duplicate, skip
@@ -1235,7 +1235,7 @@ function MyTickets({agent,tickets,allTix,onEdit,onUpdate,onDelete,showToast,agen
 }
 
 // ── ALL COMPLAINTS ──────────────────────────────────────────
-function AllComplaints({agent,allTix,onUpdate,onDelete,showToast}){
+function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
   // Dedup allTix by ticket number
   const _rawTix=Array.isArray(allTix)?allTix:[];
   const _seenNums={};
@@ -1336,9 +1336,11 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,showToast}){
   function deleteSelected(){
     if(!selected.size)return;
     if(!window.confirm('Delete '+selected.size+' ticket(s)? This cannot be undone.'))return;
-    selected.forEach(function(id){onDelete&&onDelete(id);});
+    var ids=Array.from(selected);
+    if(onDeleteBulk){onDeleteBulk(ids);}
+    else{ids.forEach(function(id){onDelete&&onDelete(id);});}
     setSelected(new Set());
-    showToast('🗑 '+selected.size+' tickets deleted');
+    showToast('🗑 '+ids.length+' ticket'+(ids.length>1?'s':'')+' deleted');
   }
 
   function getEdit(t){
@@ -2745,6 +2747,8 @@ function App(){
     return function(){window.removeEventListener('storage',onStorage);clearInterval(poll);};
   },[]);
   useEffect(function(){const id=setInterval(function(){setShifts(loadShifts());},5000);return function(){clearInterval(id);};},[]);
+  // Re-load this agent's tickets whenever cross-tab sync fires (manager updates reflect in My Tickets)
+  useEffect(function(){if(agent)setTicketsState(loadTix(agent.id));},[syncTick]);
 
   // Load all tickets from shared global store (synced with Managers Hub)
   const allTix=(function(){
@@ -2836,13 +2840,22 @@ function App(){
     setSyncTick(function(n){return n+1;});
     showToast('Ticket deleted.');
   }
+  function onDeleteBulkAllTix(ids){
+    var idSet=new Set(ids);
+    try{
+      var all=JSON.parse(localStorage.getItem('ek_v2_tickets')||'[]');
+      localStorage.setItem('ek_v2_tickets',JSON.stringify(all.filter(function(t){return !idSet.has(t.id);})));
+    }catch(e){}
+    setTickets(tickets.filter(function(t){return !idSet.has(t.id);}));
+    setSyncTick(function(n){return n+1;});
+  }
 
   if(!agent)return <Signin onSignIn={onSignIn}/>;
 
   const agentShift=shifts[agent.id]||'day';
   const screens={
     dashboard:<Dashboard agent={agent} allTix={viewTix} shifts={shifts}/>,
-    all:      <AllComplaints agent={agent} allTix={viewTix} onUpdate={onUpdateAllTix} onDelete={onDeleteAllTix} showToast={showToast}/>,
+    all:      <AllComplaints agent={agent} allTix={viewTix} onUpdate={onUpdateAllTix} onDelete={onDeleteAllTix} onDeleteBulk={onDeleteBulkAllTix} showToast={showToast}/>,
     tickets:  <TicketsScreen agent={agent} tickets={tickets} allTix={viewTix} onEdit={onEdit} onUpdate={onUpdateAllTix} onDelete={onDeleteAllTix} showToast={showToast} agentShift={agentShift} onCreate={onCreate}/>,
     slot:     <SlotReport agent={agent} tickets={tickets} showToast={showToast} agentShift={agentShift}/>,
     guide:    <SupportGuide agent={agent} showToast={showToast}/>,
