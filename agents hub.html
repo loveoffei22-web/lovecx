@@ -972,7 +972,6 @@ function shiftWatDate(t){
       if(isNaN(d.getTime()))return null;
     }
     var wat=new Date(d.toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
-    if(wat.getHours()<17)wat.setDate(wat.getDate()-1);
     return wat.getFullYear()+'-'+String(wat.getMonth()+1).padStart(2,'0')+'-'+String(wat.getDate()).padStart(2,'0');
   }catch(e){return null;}
 }
@@ -1027,13 +1026,13 @@ function MyTickets({agent,tickets,allTix,onEdit,onUpdate,onDelete,showToast,agen
 
   function getEdit(t){
     const e=editState[t.id]||{};
-    return {category:e.category!==undefined?e.category:(t.category||t.issue||''),resp:e.resp!==undefined?e.resp:(t.resp||''),status:e.status!==undefined?e.status:(t.status||'unresolved'),note:e.note!==undefined?e.note:(t.note||'')};
+    return {category:e.category!==undefined?e.category:(t.category||t.issue||''),resp:e.resp!==undefined?e.resp:(t.resp||''),status:e.status!==undefined?e.status:(t.status||'unresolved'),note:e.note!==undefined?e.note:(t.note||''),issue:e.issue!==undefined?e.issue:(t.issue||'')};
   }
   function setEdit(id,k,v){setEditState(function(s){return Object.assign({},s,{[id]:Object.assign({},s[id]||{},{[k]:v})});});}
   function toggleExpand(t){setExpanded(function(cur){return cur===t.id?null:t.id;});}
   function saveUpdate(t){
     const e=getEdit(t);
-    const updated=Object.assign({},t,{category:e.category,issue:e.category,resp:e.resp,status:e.status,note:e.note,updatedBy:agent.id,updatedAt:new Date().toISOString()});
+    const updated=Object.assign({},t,{category:e.category,issue:e.issue||e.category,resp:e.resp,status:e.status,note:e.note,updatedBy:agent.id,updatedAt:new Date().toISOString()});
     if(e.status==='resolved'&&!updated.resolvedDate)updated.resolvedDate=new Date().toISOString().slice(0,10);
     onUpdate&&onUpdate(updated);
     setEditState(function(s){const n=Object.assign({},s);delete n[t.id];return n;});
@@ -1180,11 +1179,11 @@ function MyTickets({agent,tickets,allTix,onEdit,onUpdate,onDelete,showToast,agen
                                 <div style={{font:'600 11px Sora,sans-serif',color:'var(--text)',wordBreak:'break-word'}}>{f[1]}</div>
                               </div>);})}
                           </div>
-                          {/* Complaint description */}
-                          {(t.issue||t.note)&&<div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-                            <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION</div>
-                            <div style={{font:'500 11.5px/1.6 Sora,sans-serif',color:'var(--text)',background:'rgba(0,0,0,.2)',borderRadius:7,padding:'10px 12px'}}>{t.issue||t.note}</div>
-                          </div>}
+                          {/* Complaint description — editable */}
+                          <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
+                            <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION ✏</div>
+                            <textarea className="inp" rows={3} value={getEdit(t).issue} onClick={function(e){e.stopPropagation();}} onChange={function(e){e.stopPropagation();setEdit(t.id,'issue',e.target.value);}} placeholder="Describe the complaint…" style={{resize:'vertical',fontSize:11,marginBottom:0}}/>
+                          </div>
                           {/* Editable section */}
                           <div style={{padding:'14px 16px',background:'rgba(0,0,0,.15)'}}>
                             <div style={{font:'700 9px Sora,sans-serif',color:agent.color,textTransform:'uppercase',letterSpacing:'.12em',marginBottom:12}}>✏️ UPDATE THIS TICKET</div>
@@ -1345,7 +1344,7 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
   }
 
   function getEdit(t){
-    return Object.assign({category:t.category||t.issue||'',resp:t.resp||'',status:t.status||'unresolved',note:t.note||''},editState[t.id]||{});
+    return Object.assign({category:t.category||t.issue||'',resp:t.resp||'',status:t.status||'unresolved',note:t.note||'',issue:t.issue||''},editState[t.id]||{});
   }
   function setEdit(id,k,v){
     setEditState(function(s){return Object.assign({},s,{[id]:Object.assign({},s[id]||{},({[k]:v}))});});
@@ -1354,12 +1353,12 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
     const next=expanded===t.id?null:t.id;
     setExpanded(next);
     if(next&&!editState[t.id]){
-      setEditState(function(s){return Object.assign({},s,{[t.id]:{category:t.category||t.issue||'',resp:t.resp||'',status:t.status||'unresolved',note:t.note||''}});});
+      setEditState(function(s){return Object.assign({},s,{[t.id]:{category:t.category||t.issue||'',resp:t.resp||'',status:t.status||'unresolved',note:t.note||'',issue:t.issue||''}});});
     }
   }
   function saveUpdate(t){
     const e=getEdit(t);
-    const updated=Object.assign({},t,{category:e.category,issue:e.category,resp:e.resp,status:e.status,note:e.note,updatedBy:agent.id,updatedAt:new Date().toISOString()});
+    const updated=Object.assign({},t,{category:e.category,issue:e.issue||e.category,resp:e.resp,status:e.status,note:e.note,updatedBy:agent.id,updatedAt:new Date().toISOString()});
     onUpdate(updated);
     setExpanded(null);
   }
@@ -1531,10 +1530,10 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
                             </div>);})}
                         </div>
                         {/* ── Complaint description ── */}
-                        {(t.issue||t.note)&&<div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-                          <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION</div>
-                          <div style={{font:'500 11.5px/1.6 Sora,sans-serif',color:'var(--text)',background:'rgba(0,0,0,.2)',borderRadius:7,padding:'10px 12px'}}>{t.issue||t.note}</div>
-                        </div>}
+                        <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
+                          <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION ✏</div>
+                          <textarea className="inp" rows={3} value={getEdit(t).issue} onClick={function(ev){ev.stopPropagation();}} onChange={function(ev){ev.stopPropagation();setEdit(t.id,'issue',ev.target.value);}} placeholder="Describe the complaint…" style={{resize:'vertical',fontSize:11,marginBottom:0}}/>
+                        </div>
                         {/* ── Editable section ── */}
                         <div style={{padding:'14px 16px',background:'rgba(0,0,0,.15)'}}>
                           <div style={{font:'700 9px Sora,sans-serif',color:agent.color,textTransform:'uppercase',letterSpacing:'.12em',marginBottom:12}}>✏️ UPDATE THIS TICKET</div>
@@ -2547,7 +2546,7 @@ function EditModal({ticket,agent,onSave,onDelete,onClose}){
 function DataScreen({agent,tickets,setTickets,showToast,agentShift}){
   const watNow=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
   const todayStr=watNow.toISOString().slice(0,10);
-  const todayTix=tickets.filter(function(t){return inDutyWindow(t,agentShift);});
+  const todayTix=tickets.filter(function(t){return (t.agent===agent.id||t.agentId===agent.id)&&inDutyWindow(t,agentShift);});
   const[dragging,setDragging]=useState(false);
   const[preview,setPreview]=useState(null);
   const[tab,setTab]=useState('export');
@@ -2575,7 +2574,7 @@ function DataScreen({agent,tickets,setTickets,showToast,agentShift}){
           <div className="card">
             <div className="card-head"><h3>📋 My Tickets ({todayTix.length})</h3><button onClick={dlToday} style={{padding:'8px 12px',background:'var(--agent)',color:'#0A1A4F',border:'none',borderRadius:8,font:'800 11px Sora,sans-serif',cursor:'pointer'}}>⬇ JSON</button></div>
             <div style={{padding:14}}>
-              <div style={{font:'500 10px/1.4 Sora,sans-serif',color:'var(--muted)',marginBottom:10,background:'rgba(99,102,241,.06)',border:'1px solid rgba(99,102,241,.15)',borderRadius:6,padding:'6px 10px'}}>⏱ {fmtDutyWindow()}</div>
+              <div style={{font:'500 10px/1.4 Sora,sans-serif',color:'var(--muted)',marginBottom:10,background:'rgba(99,102,241,.06)',border:'1px solid rgba(99,102,241,.15)',borderRadius:6,padding:'6px 10px'}}>⏱ {fmtDutyWindow(agentShift)}</div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:12}}>
                 {[{l:"Today's",v:todayTix.length,c:'var(--infob)'},{l:'Resolved',v:todayTix.filter(function(t){return t.status==='resolved';}).length,c:'#22C55E'},{l:'Unresolved',v:todayTix.filter(function(t){return t.status==='unresolved';}).length,c:'#EF4444'}].map(function(k){return(
                   <div key={k.l} style={{background:'rgba(0,0,0,.1)',border:'1px solid var(--bsoft)',borderRadius:8,padding:'10px',textAlign:'center'}}>
@@ -2918,7 +2917,7 @@ function App(){
     slot:     <SlotReport agent={agent} tickets={tickets} showToast={showToast} agentShift={agentShift}/>,
     guide:    <SupportGuide agent={agent} showToast={showToast}/>,
     photos:   <ProfilePhotos showToast={showToast}/>,
-    data:     <DataScreen agent={agent} tickets={viewTix} setTickets={setTickets} showToast={showToast} agentShift={agentShift}/>,
+    data:     <DataScreen agent={agent} tickets={allTix} setTickets={setTickets} showToast={showToast} agentShift={agentShift}/>,
     sync:     <CloudSync agent={agent} tickets={tickets} setTickets={setTickets} showToast={showToast} agentShift={agentShift}/>,
     settings: <AgentSettings agent={agent} tickets={tickets} setTickets={setTickets} showToast={showToast}/>,
   };
