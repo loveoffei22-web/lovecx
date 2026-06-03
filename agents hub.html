@@ -2711,12 +2711,14 @@ function TicketsScreen({agent,tickets,allTix,onEdit,onUpdate,onDelete,showToast,
 function AgentSettings({agent,tickets,setTickets,showToast}){
   function onDedup(){
     var all=JSON.parse(localStorage.getItem('ek_v2_tickets')||'[]');
-    var seen={};
+    var seen=new Set();
     var deduped=all.filter(function(t){
-      var n=String(t.num||'').trim().toLowerCase();
-      if(!n)return true;
-      if(seen[n])return false;
-      seen[n]=true;return true;
+      var n=_norm(t.num||'');
+      // Tickets WITH number: key = num; WITHOUT: key = name+phone+date (catches paste duplicates)
+      var key=n?n:(_norm(t.name||'')+'|'+_norm(t.phone||'')+'|'+(t.created||t.loggedAt||'').slice(0,10));
+      if(!key||key==='||')return true;
+      if(seen.has(key))return false;
+      seen.add(key);return true;
     });
     var removed=all.length-deduped.length;
     if(!removed){showToast('No duplicates found ✓');return;}

@@ -4872,18 +4872,21 @@ function App(){
   function onSignOut(){setSignedIn(false);localStorage.removeItem('ek_v2_auth');}
   function onPurge(){if(!confirm('Delete ALL tickets received before May 1 2026 (test data)? This cannot be undone.'))return;const kept=tickets.filter(function(t){var d=shiftWatDate(t);return d?d>='2026-05-01':true;});const removed=tickets.length-kept.length;persistTickets(kept);setTickets(kept);setShowSettings(false);showToast('🗑 Purged '+removed+' pre-May test ticket'+(removed!==1?'s':'')+' ✅');}
   function onDedup(){
-    // Unique key is the ticket number (t.num) — the app's canonical identifier
     const seen=new Set();
     const deduped=tickets.filter(function(t){
       var n=_norm(t.num||'');
-      if(!n)return true; // no num — keep, cannot dedup
-      if(seen.has(n))return false;
-      seen.add(n);return true;
+      // For tickets WITH a number: key = ticket number
+      // For tickets WITHOUT a number: key = name + phone + complaint date (catches paste duplicates)
+      var key=n?n:(_norm(t.name||'')+'|'+_norm(t.phone||'')+'|'+(t.created||t.loggedAt||'').slice(0,10));
+      if(!key||key==='||')return true; // no usable key — keep
+      if(seen.has(key))return false;
+      seen.add(key);return true;
     });
     const removed=tickets.length-deduped.length;
     if(removed===0){showToast('No duplicates found ✓');return;}
+    if(!confirm('Remove '+removed+' duplicate ticket'+(removed>1?'s':'')+' from all agents? This cannot be undone.'))return;
     persistTickets(deduped);setTickets(deduped);setShowSettings(false);
-    showToast('Removed '+removed+' duplicate ticket'+(removed!==1?'s':'')+' ✅');
+    showToast('🧹 Removed '+removed+' duplicate ticket'+(removed!==1?'s':'')+' ✅');
   }
   function onResetMonth(){const label=new Date(activeMonth+'-15').toLocaleDateString('en-GB',{month:'long',year:'numeric'});if(!confirm('Delete ALL tickets from '+label+'? This cannot be undone.'))return;const kept=tickets.filter(function(t){return shiftWatYM(t)!==activeMonth;});persistTickets(kept);setTickets(kept);setShowSettings(false);showToast('🗑 Cleared '+label+' tickets.');}
   function onReset(){if(!confirm('Reset ALL data for the entire app? This clears all tickets for ALL agents and cannot be undone.'))return;    // Clear all agent tickets
