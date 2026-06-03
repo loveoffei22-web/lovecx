@@ -523,6 +523,10 @@ function dedupTickets(existing,incoming){
     var n=_norm(t.num||'');
     if(n&&byNum[n]!==undefined){
       var idx=byNum[n];
+      if(idx>=result.length){
+        // duplicate within incoming (already in kept) — drop it
+        dropped++;return;
+      }
       if(result[idx].status!==t.status){
         // Status changed — merge: update status (and note/resp if provided)
         result[idx]=Object.assign({},result[idx],{
