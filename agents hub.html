@@ -1235,7 +1235,7 @@ function MyTickets({agent,tickets,allTix,onEdit,onUpdate,onDelete,showToast,agen
 }
 
 // ── ALL COMPLAINTS ──────────────────────────────────────────
-function AllComplaints({agent,allTix,onUpdate,onDelete,showToast}){
+function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
   // Dedup allTix by ticket number
   const _rawTix=Array.isArray(allTix)?allTix:[];
   const _seenNums={};
@@ -1336,9 +1336,11 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,showToast}){
   function deleteSelected(){
     if(!selected.size)return;
     if(!window.confirm('Delete '+selected.size+' ticket(s)? This cannot be undone.'))return;
-    selected.forEach(function(id){onDelete&&onDelete(id);});
+    var ids=Array.from(selected);
+    if(onDeleteBulk){onDeleteBulk(ids);}
+    else{ids.forEach(function(id){onDelete&&onDelete(id);});}
     setSelected(new Set());
-    showToast('🗑 '+selected.size+' tickets deleted');
+    showToast('🗑 '+ids.length+' ticket'+(ids.length>1?'s':'')+' deleted');
   }
 
   function getEdit(t){
@@ -2836,13 +2838,22 @@ function App(){
     setSyncTick(function(n){return n+1;});
     showToast('Ticket deleted.');
   }
+  function onDeleteBulkAllTix(ids){
+    var idSet=new Set(ids);
+    try{
+      var all=JSON.parse(localStorage.getItem('ek_v2_tickets')||'[]');
+      localStorage.setItem('ek_v2_tickets',JSON.stringify(all.filter(function(t){return !idSet.has(t.id);})));
+    }catch(e){}
+    setTickets(tickets.filter(function(t){return !idSet.has(t.id);}));
+    setSyncTick(function(n){return n+1;});
+  }
 
   if(!agent)return <Signin onSignIn={onSignIn}/>;
 
   const agentShift=shifts[agent.id]||'day';
   const screens={
     dashboard:<Dashboard agent={agent} allTix={viewTix} shifts={shifts}/>,
-    all:      <AllComplaints agent={agent} allTix={viewTix} onUpdate={onUpdateAllTix} onDelete={onDeleteAllTix} showToast={showToast}/>,
+    all:      <AllComplaints agent={agent} allTix={viewTix} onUpdate={onUpdateAllTix} onDelete={onDeleteAllTix} onDeleteBulk={onDeleteBulkAllTix} showToast={showToast}/>,
     tickets:  <TicketsScreen agent={agent} tickets={tickets} allTix={viewTix} onEdit={onEdit} onUpdate={onUpdateAllTix} onDelete={onDeleteAllTix} showToast={showToast} agentShift={agentShift} onCreate={onCreate}/>,
     slot:     <SlotReport agent={agent} tickets={tickets} showToast={showToast} agentShift={agentShift}/>,
     guide:    <SupportGuide agent={agent} showToast={showToast}/>,
