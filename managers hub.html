@@ -1978,8 +1978,54 @@ function AllComplaints({tickets,onUpdate,onBulkUpdate,onBatchUpdate,onDelete,sho
             <option value="all">All resp. parties</option>
             {respOpts.map(function(r){return <option key={r} value={r}>{r}</option>;})}
           </select>
-          <input type="date" className="sel" style={{height:36,flex:'0 0 140px'}} value={fFrom} onChange={function(e){setFFrom(e.target.value);}}/>
-          <input type="date" className="sel" style={{height:36,flex:'0 0 140px'}} value={fTo} onChange={function(e){setFTo(e.target.value);}}/>
+          {(function(){
+            function todayStr(){var n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
+            var PRESETS=[
+              {l:'📅 Date range…',v:''},
+              {l:'Today',v:'today'},
+              {l:'Yesterday',v:'yesterday'},
+              {l:'This week',v:'week'},
+              {l:'This month',v:'month'},
+              {l:'May 1 – today',v:'may1'},
+              {l:'April',v:'apr'},
+              {l:'March',v:'mar'},
+              {l:'Custom range',v:'custom'},
+            ];
+            function applyPreset(v){
+              var n=new Date();
+              var y=n.getFullYear();var m=n.getMonth();
+              var td=todayStr();
+              if(v==='today'){setFFrom(td);setFTo(td);}
+              else if(v==='yesterday'){var y2=new Date(n-86400000);var s=y2.getFullYear()+'-'+String(y2.getMonth()+1).padStart(2,'0')+'-'+String(y2.getDate()).padStart(2,'0');setFFrom(s);setFTo(s);}
+              else if(v==='week'){var dow=n.getDay();var mon=new Date(n-(((dow+6)%7)*86400000));var ms=mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');setFFrom(ms);setFTo(td);}
+              else if(v==='month'){setFFrom(y+'-'+String(m+1).padStart(2,'0')+'-01');setFTo(td);}
+              else if(v==='may1'){setFFrom(y+'-05-01');setFTo(td);}
+              else if(v==='apr'){setFFrom(y+'-04-01');setFTo(y+'-04-30');}
+              else if(v==='mar'){setFFrom(y+'-03-01');setFTo(y+'-03-31');}
+              else if(v===''){setFFrom('');setFTo('');}
+            }
+            var activePreset=(function(){
+              var td=todayStr();var n=new Date();var y=n.getFullYear();var m=n.getMonth();
+              if(!fFrom&&!fTo)return '';
+              if(fFrom===td&&fTo===td)return 'today';
+              if(fFrom===fTo){var yy=new Date(n-86400000);var s=yy.getFullYear()+'-'+String(yy.getMonth()+1).padStart(2,'0')+'-'+String(yy.getDate()).padStart(2,'0');if(fFrom===s)return 'yesterday';}
+              if(fFrom===y+'-05-01'&&fTo===td)return 'may1';
+              if(fFrom===y+'-'+String(m+1).padStart(2,'0')+'-01'&&fTo===td)return 'month';
+              if(fFrom===y+'-04-01'&&fTo===y+'-04-30')return 'apr';
+              if(fFrom===y+'-03-01'&&fTo===y+'-03-31')return 'mar';
+              return 'custom';
+            })();
+            return(<>
+              <select className="sel" style={{flex:'0 0 150px',height:36,color:activePreset?'var(--ek-gold)':'var(--muted)',fontWeight:activePreset?700:400}} value={activePreset} onChange={function(e){applyPreset(e.target.value);}}>
+                {PRESETS.map(function(p){return <option key={p.v} value={p.v}>{p.l}</option>;})}
+              </select>
+              {(activePreset==='custom'||(!activePreset&&(fFrom||fTo)))&&(<>
+                <input type="date" className="sel" style={{height:36,flex:'0 0 140px'}} value={fFrom} onChange={function(e){setFFrom(e.target.value);}}/>
+                <span style={{alignSelf:'center',color:'var(--muted)',fontSize:11,flexShrink:0}}>→</span>
+                <input type="date" className="sel" style={{height:36,flex:'0 0 140px'}} value={fTo} onChange={function(e){setFTo(e.target.value);}}/>
+              </>)}
+            </>);
+          })()}
           {(search||fSt!=='all'||fBu!=='all'||fCat!=='all'||fResp!=='all'||fFrom||fTo||sort!=='newest')&&<button className="btn btn-sm btn-danger" onClick={function(){setSearch('');setFSt('all');setFBu('all');setFCat('all');setFResp('all');setFFrom('');setFTo('');setSort('newest');}} style={{height:36}}>Clear</button>}
           <button onClick={function(){var now=new Date();var y=now.getFullYear();var m=String(now.getMonth()+1).padStart(2,'0');setExpFrom(y+'-'+m+'-01');var last=new Date(y,now.getMonth()+1,0);setExpTo(y+'-'+m+'-'+String(last.getDate()).padStart(2,'0'));setShowExportDlg(true);}} style={{height:36,padding:'0 14px',background:'#059669',color:'#fff',border:'none',borderRadius:8,font:'700 11px Sora,sans-serif',cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}>⬇ Excel</button>
         </div>
