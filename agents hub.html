@@ -1385,20 +1385,49 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
     var src=allTix.slice();
     if(from)src=src.filter(function(t){return(t.created||'')>=from;});
     if(to)src=src.filter(function(t){return(t.created||'')<=to;});
-    var headers=['#','Ticket No','Customer Name','Phone','Meter/Account','BU','Category','Responsible Party','Status','Description','Action Taken','Created','Logged At','Agent'];
-    function row(t){return[t.num,t.num,t.name,t.phone,t.meter||t.account||'',t.bu,t.category||'',t.resp||'',t.status,t.issue||'',t.note||'',t.created||'',t.loggedAt||'',t.agentId||t.agent||''];}
-    var all=src.map(row);
-    var res=src.filter(function(t){return t.status==='resolved';}).map(row);
-    var prg=src.filter(function(t){return t.status==='progress';}).map(row);
-    var unr=src.filter(function(t){return t.status==='unresolved';}).map(row);
-    var wb=XLSX.utils.book_new();
-    [['All Tickets',all],['Resolved',res],['In Progress',prg],['Unresolved',unr]].forEach(function(pair){
-      var ws=XLSX.utils.aoa_to_sheet([headers].concat(pair[1]));
-      ws['!cols']=headers.map(function(_,i){return{wch:i===10||i===9?35:18};});
-      XLSX.utils.book_append_sheet(wb,ws,pair[0]);
+    var resolved=src.filter(function(t){return t.status==='resolved';});
+    var inprog=src.filter(function(t){return t.status==='progress';});
+    var unresolv=src.filter(function(t){return t.status==='unresolved';});
+    // Build category summary
+    var cats={};var catOrder=[];
+    src.forEach(function(t){
+      var c=(t.category||'UNCATEGORISED').toUpperCase();
+      if(!cats[c]){cats[c]={res:0,prg:0,unr:0,resp:t.resp||''};catOrder.push(c);}
+      if(t.status==='resolved')cats[c].res++;
+      else if(t.status==='progress')cats[c].prg++;
+      else cats[c].unr++;
     });
+    var resPct=src.length?Math.round(resolved.length/src.length*100):0;
+    var prgPct=src.length?Math.round(inprog.length/src.length*100):0;
+    var unrPct=src.length?Math.round(unresolv.length/src.length*100):0;
+    var now=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
+    var timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var dStr=timeStr+', '+days[now.getDay()]+', '+now.getDate()+' '+months[now.getMonth()]+' '+now.getFullYear();
+    var todayStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    var rows=[
+      ['COMPLAINT CATEGORY REPORT','','','','','',''],
+      ['S/N','Complaint Category','Responsible Party','Resolved','In Progress','Unresolved','Grand Total'],
+    ];
+    catOrder.forEach(function(cat,i){
+      var v=cats[cat];
+      rows.push([i+1,cat,v.resp,v.res,v.prg,v.unr,v.res+v.prg+v.unr]);
+    });
+    rows.push(['TOTAL','','',resolved.length,inprog.length,unresolv.length,src.length]);
+    rows.push(['','','','','','','']);
+    rows.push(['EXECUTIVE SUMMARY','','','','','','']);
+    rows.push(['As at '+dStr,'','','','','','']);
+    rows.push(['','','','','','','']);
+    rows.push(['A total of '+src.length+' complaints were received and processed across all categories.','','','','','','']);
+    rows.push([resolved.length+' ('+resPct+'%) have been fully resolved. '+inprog.length+' ('+prgPct+'%) are currently in progress. '+unresolv.length+' ('+unrPct+'%) remain unresolved and require urgent attention.','','','','','','']);
+    var ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:5},{wch:46},{wch:30},{wch:10},{wch:12},{wch:12},{wch:12}];
+    ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}}];
     var label=(from&&to)?from+'_to_'+to:(from?'from_'+from:(to?'to_'+to:'all'));
-    XLSX.writeFile(wb,'EKEDP_Complaints_'+label+'.xlsx');
+    var wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Complaint Category Report');
+    XLSX.writeFile(wb,'EKEDP_Complaints_'+label+'_'+todayStr+'.xlsx');
     showToast('Excel exported — '+src.length+' tickets ✓');
     setShowExportDlg(false);
   }
