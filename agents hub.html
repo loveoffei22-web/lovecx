@@ -498,7 +498,7 @@ function saveTix(id,tix){
 function loadShifts(){try{return JSON.parse(localStorage.getItem('ek_v2_shifts')||'{}');}catch{return{};}}
 // De-dup: ticket number is the sole key when present; fall back to full sig only for numberless tickets
 function _norm(s){return String(s||'').toLowerCase().replace(/\s+/g,' ').replace(/[^a-z0-9 ]/g,'').trim();}
-function ticketSig(t){return _norm(t.name)+'|'+_norm(t.issue||t.complaint||t.category||'');}
+function ticketSig(t){return _norm(t.num||'')+'|'+_norm(t.name)+'|'+_norm(t.issue||t.complaint||t.category||'');}
 function dedupTickets(existing,incoming){
   // Compare by ticket number (t.num) + status:
   // - same num, same status → duplicate, skip
@@ -2747,6 +2747,8 @@ function App(){
     return function(){window.removeEventListener('storage',onStorage);clearInterval(poll);};
   },[]);
   useEffect(function(){const id=setInterval(function(){setShifts(loadShifts());},5000);return function(){clearInterval(id);};},[]);
+  // Re-load this agent's tickets whenever cross-tab sync fires (manager updates reflect in My Tickets)
+  useEffect(function(){if(agent)setTicketsState(loadTix(agent.id));},[syncTick]);
 
   // Load all tickets from shared global store (synced with Managers Hub)
   const allTix=(function(){
