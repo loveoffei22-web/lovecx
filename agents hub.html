@@ -976,37 +976,31 @@ function shiftWatDate(t){
   }catch(e){return null;}
 }
 function shiftWatYM(t){var d=shiftWatDate(t);return d?d.slice(0,7):null;}
-// Sunday     : Sat 16:00 → Sun 16:00
-// Monday     : Sun 16:00 → Mon 17:00  (covers full weekend gap)
-// Tue–Fri day shift   : today 08:00 → today 17:00
-// Tue–Fri shadow/night: prev day 17:01 → today 17:00
+// Shift schedule (WAT):
+// Saturday   : Sat 10:00 → Sat 16:00
+// Sunday     : Sat 16:01 → Sun 16:00
+// Monday     : Sun 16:01 → Mon 17:00
+// Tue–Fri    : prev day 17:01 → today 17:00  (5:01 PM counts as next day)
 function getDutyWindow(agentShift){
   var now=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
   var dow=now.getDay(); // 0=Sun,1=Mon…6=Sat
   var todayBase=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   var start,end;
-  if(dow===6){// Saturday: Fri 17:01 → Sat 16:00
-    var fri=new Date(todayBase);fri.setDate(fri.getDate()-1);
-    start=new Date(fri.getFullYear(),fri.getMonth(),fri.getDate(),17,1,0);
+  if(dow===6){// Saturday: 10:00 → 16:00
+    start=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),10,0,0);
     end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),16,0,0);
-  } else if(dow===0){// Sunday: Sat 16:00 → Sun 16:00
+  } else if(dow===0){// Sunday: Sat 16:01 → Sun 16:00
     var sat=new Date(todayBase);sat.setDate(sat.getDate()-1);
-    start=new Date(sat.getFullYear(),sat.getMonth(),sat.getDate(),16,0,0);
+    start=new Date(sat.getFullYear(),sat.getMonth(),sat.getDate(),16,1,0);
     end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),16,0,0);
-  } else if(dow===1){// Monday: Sun 16:00 → Mon 17:59
+  } else if(dow===1){// Monday: Sun 16:01 → Mon 17:00
     var sun=new Date(todayBase);sun.setDate(sun.getDate()-1);
-    start=new Date(sun.getFullYear(),sun.getMonth(),sun.getDate(),16,0,0);
-    end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),17,59,59);
-  } else {// Tue–Fri: depends on shift
-    var isShadow=(agentShift==='shadow'||agentShift==='night');
-    if(isShadow){// night: prev day 17:01 → today 17:59
-      var prev=new Date(todayBase);prev.setDate(prev.getDate()-1);
-      start=new Date(prev.getFullYear(),prev.getMonth(),prev.getDate(),17,1,0);
-      end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),17,59,59);
-    } else {// day: 08:00 → 17:59 today
-      start=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),8,0,0);
-      end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),17,59,59);
-    }
+    start=new Date(sun.getFullYear(),sun.getMonth(),sun.getDate(),16,1,0);
+    end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),17,0,0);
+  } else {// Tue–Fri: prev day 17:01 → today 17:00
+    var prev=new Date(todayBase);prev.setDate(prev.getDate()-1);
+    start=new Date(prev.getFullYear(),prev.getMonth(),prev.getDate(),17,1,0);
+    end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),17,0,0);
   }
   return{start:start,end:end};
 }

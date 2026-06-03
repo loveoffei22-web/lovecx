@@ -608,19 +608,37 @@ var EK_AGENT_PHOTOS = {
 const {useState,useEffect,useRef,useMemo,useCallback}=React;
 
 // ── DUTY WINDOW ─────────────────────────────────────────────
+// Shift schedule (WAT):
+// Saturday: Sat 10:00 → Sat 16:00
+// Sunday  : Sat 16:01 → Sun 16:00
+// Monday  : Sun 16:01 → Mon 17:00
+// Tue–Fri : prev day 17:01 → today 17:00  (5:01 PM = next day)
 function getDutyWindow(){
   var now=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
   var dow=now.getDay();
   var todayBase=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   var start,end;
-  if(dow===6){var fri=new Date(todayBase);fri.setDate(fri.getDate()-1);start=new Date(fri.getFullYear(),fri.getMonth(),fri.getDate(),17,1,0);end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),16,0,0);}
-  else if(dow===0){var sat=new Date(todayBase);sat.setDate(sat.getDate()-1);start=new Date(sat.getFullYear(),sat.getMonth(),sat.getDate(),16,1,0);end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),16,0,0);}
-  else{var prev=new Date(todayBase);if(dow===1){prev.setDate(prev.getDate()-3);}else{prev.setDate(prev.getDate()-1);}start=new Date(prev.getFullYear(),prev.getMonth(),prev.getDate(),17,1,0);end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),17,0,0);}
+  if(dow===6){// Saturday: 10:00 → 16:00
+    start=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),10,0,0);
+    end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),16,0,0);
+  } else if(dow===0){// Sunday: Sat 16:01 → Sun 16:00
+    var sat=new Date(todayBase);sat.setDate(sat.getDate()-1);
+    start=new Date(sat.getFullYear(),sat.getMonth(),sat.getDate(),16,1,0);
+    end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),16,0,0);
+  } else if(dow===1){// Monday: Sun 16:01 → Mon 17:00
+    var sun=new Date(todayBase);sun.setDate(sun.getDate()-1);
+    start=new Date(sun.getFullYear(),sun.getMonth(),sun.getDate(),16,1,0);
+    end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),17,0,0);
+  } else {// Tue–Fri: prev day 17:01 → today 17:00
+    var prev=new Date(todayBase);prev.setDate(prev.getDate()-1);
+    start=new Date(prev.getFullYear(),prev.getMonth(),prev.getDate(),17,1,0);
+    end=new Date(todayBase.getFullYear(),todayBase.getMonth(),todayBase.getDate(),17,0,0);
+  }
   return{start:start,end:end};
 }
 function inDutyWindow(t){
   var w=getDutyWindow();
-  var d=new Date(t.created||t.receivedAt||'');
+  var d=new Date(t.loggedAt||t.created||t.receivedAt||'');
   if(isNaN(d.getTime()))return false;
   var watD=new Date(d.toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
   return watD>=w.start&&watD<=w.end;
