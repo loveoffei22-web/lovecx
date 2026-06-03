@@ -1254,6 +1254,9 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
   const[page,setPage]=useState(0);
   const[selected,setSelected]=useState(new Set());
   const lastChecked=useRef(null);
+  const[showExportDlg,setShowExportDlg]=useState(false);
+  const[expFrom,setExpFrom]=useState('');
+  const[expTo,setExpTo]=useState('');
   const[cellEdit,setCellEdit]=useState(null); // {id,field,val}
   const XLS_COLS_A=['category','status','note']; // editable columns in order
   function commitCellA(t,noClose){
@@ -1377,6 +1380,28 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
   function dlJSON(){
     const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify({exportedAt:new Date().toISOString(),total:filt.length,tickets:filt},null,2));a.download='EKEDP_AllComplaints.json';a.click();
   }
+  function exportExcel(from,to){
+    if(typeof XLSX==='undefined'){showToast('Excel library not loaded yet — try again in a moment.','error');return;}
+    var src=allTix.slice();
+    if(from)src=src.filter(function(t){return(t.created||'')>=from;});
+    if(to)src=src.filter(function(t){return(t.created||'')<=to;});
+    var headers=['#','Ticket No','Customer Name','Phone','Meter/Account','BU','Category','Responsible Party','Status','Description','Action Taken','Created','Logged At','Agent'];
+    function row(t){return[t.num,t.num,t.name,t.phone,t.meter||t.account||'',t.bu,t.category||'',t.resp||'',t.status,t.issue||'',t.note||'',t.created||'',t.loggedAt||'',t.agentId||t.agent||''];}
+    var all=src.map(row);
+    var res=src.filter(function(t){return t.status==='resolved';}).map(row);
+    var prg=src.filter(function(t){return t.status==='progress';}).map(row);
+    var unr=src.filter(function(t){return t.status==='unresolved';}).map(row);
+    var wb=XLSX.utils.book_new();
+    [['All Tickets',all],['Resolved',res],['In Progress',prg],['Unresolved',unr]].forEach(function(pair){
+      var ws=XLSX.utils.aoa_to_sheet([headers].concat(pair[1]));
+      ws['!cols']=headers.map(function(_,i){return{wch:i===10||i===9?35:18};});
+      XLSX.utils.book_append_sheet(wb,ws,pair[0]);
+    });
+    var label=(from&&to)?from+'_to_'+to:(from?'from_'+from:(to?'to_'+to:'all'));
+    XLSX.writeFile(wb,'EKEDP_Complaints_'+label+'.xlsx');
+    showToast('Excel exported — '+src.length+' tickets ✓');
+    setShowExportDlg(false);
+  }
 
   return(
     <div>
@@ -1428,6 +1453,7 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
             })}
           </div>
           {(search||fSt!=='all'||fBu!=='all'||fCat!=='all'||fResp!=='all'||fFrom||fTo||sort!=='newest'||fOwn!=='all')&&<button className="btn btn-sm btn-danger" onClick={function(){setSearch('');setFSt('all');setFBu('all');setFCat('all');setFResp('all');setFFrom('');setFTo('');setSort('newest');setFOwn('all');setPage(0);}} style={{height:36}}>Clear</button>}
+          <button onClick={function(){var now=new Date();var y=now.getFullYear();var m=String(now.getMonth()+1).padStart(2,'0');setExpFrom(y+'-'+m+'-01');var last=new Date(y,now.getMonth()+1,0);setExpTo(y+'-'+m+'-'+String(last.getDate()).padStart(2,'0'));setShowExportDlg(true);}} style={{height:36,padding:'0 14px',background:'#059669',color:'#fff',border:'none',borderRadius:8,font:'700 11px Sora,sans-serif',cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}>⬇ Excel</button>
         </div>
         {totalPages>1&&<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8,padding:'6px 2px'}}>
             <span style={{font:'600 11px Sora,sans-serif',color:'var(--muted)'}}>Showing <b style={{color:'var(--text)'}}>{safePage*PAGE+1}–{Math.min((safePage+1)*PAGE,filt.length)}</b> of <b style={{color:'var(--ek-gold)'}}>{filt.length}</b></span>
@@ -1587,6 +1613,29 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
           </div>
         );
       })()}
+      {showExportDlg&&(
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={function(){setShowExportDlg(false);}}>
+          <div style={{background:'var(--surface)',borderRadius:14,width:'min(420px,92vw)',padding:28,boxShadow:'0 24px 80px rgba(0,0,0,.6)'}} onClick={function(ev){ev.stopPropagation();}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <span style={{font:'800 15px Sora,sans-serif',color:'var(--text)'}}>📥 Export to Excel</span>
+              <button onClick={function(){setShowExportDlg(false);}} style={{background:'transparent',border:'none',color:'var(--muted)',fontSize:18,cursor:'pointer',lineHeight:1}}>✕</button>
+            </div>
+            <div style={{marginBottom:14}}>
+              <label className="lbl">From date</label>
+              <input type="date" className="inp" value={expFrom} onChange={function(e){setExpFrom(e.target.value);}}/>
+            </div>
+            <div style={{marginBottom:20}}>
+              <label className="lbl">To date</label>
+              <input type="date" className="inp" value={expTo} onChange={function(e){setExpTo(e.target.value);}}/>
+            </div>
+            <div style={{font:'500 11px Sora,sans-serif',color:'var(--muted)',marginBottom:16}}>Leave both blank to export all tickets. Filters by the <b>Created</b> date field.</div>
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={function(){exportExcel(expFrom,expTo);}} style={{flex:1,padding:'12px',background:'#059669',color:'#fff',border:'none',borderRadius:9,font:'800 13px Sora,sans-serif',cursor:'pointer'}}>⬇ Download Excel</button>
+              <button onClick={function(){setShowExportDlg(false);}} style={{padding:'12px 18px',background:'transparent',color:'var(--muted)',border:'1px solid var(--bsoft)',borderRadius:9,font:'700 12px Sora,sans-serif',cursor:'pointer'}}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

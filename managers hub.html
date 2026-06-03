@@ -1741,6 +1741,16 @@ function AllComplaints({tickets,onUpdate,onBulkUpdate,onBatchUpdate,onDelete,sho
   const[bulkStatus,setBulkStatus]=useState('resolved');
   const[page,setPage]=useState(0);
   const PAGE=100;
+  const[showExportDlg,setShowExportDlg]=useState(false);
+  const[expFrom,setExpFrom]=useState('');
+  const[expTo,setExpTo]=useState('');
+  function exportExcelRange(from,to){
+    var src=tickets.slice();
+    if(from)src=src.filter(function(t){return(t.created||'')>=from;});
+    if(to)src=src.filter(function(t){return(t.created||'')<=to;});
+    exportExcelFull(src,(from&&to)?from+'_to_'+to:(from?'from_'+from:(to?'to_'+to:'All')));
+    setShowExportDlg(false);
+  }
 
   function getF(t,k){return edits[t.id]&&edits[t.id][k]!==undefined?edits[t.id][k]:t[k];}
   function setF(id,k,v){setEdits(function(e){return Object.assign({},e,{[id]:Object.assign({},e[id]||{},{[k]:v})});});}
@@ -1971,6 +1981,7 @@ function AllComplaints({tickets,onUpdate,onBulkUpdate,onBatchUpdate,onDelete,sho
           <input type="date" className="sel" style={{height:36,flex:'0 0 140px'}} value={fFrom} onChange={function(e){setFFrom(e.target.value);}}/>
           <input type="date" className="sel" style={{height:36,flex:'0 0 140px'}} value={fTo} onChange={function(e){setFTo(e.target.value);}}/>
           {(search||fSt!=='all'||fBu!=='all'||fCat!=='all'||fResp!=='all'||fFrom||fTo||sort!=='newest')&&<button className="btn btn-sm btn-danger" onClick={function(){setSearch('');setFSt('all');setFBu('all');setFCat('all');setFResp('all');setFFrom('');setFTo('');setSort('newest');}} style={{height:36}}>Clear</button>}
+          <button onClick={function(){var now=new Date();var y=now.getFullYear();var m=String(now.getMonth()+1).padStart(2,'0');setExpFrom(y+'-'+m+'-01');var last=new Date(y,now.getMonth()+1,0);setExpTo(y+'-'+m+'-'+String(last.getDate()).padStart(2,'0'));setShowExportDlg(true);}} style={{height:36,padding:'0 14px',background:'#059669',color:'#fff',border:'none',borderRadius:8,font:'700 11px Sora,sans-serif',cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}>⬇ Excel</button>
         </div>
       </div>
 
@@ -2187,6 +2198,29 @@ function AllComplaints({tickets,onUpdate,onBulkUpdate,onBatchUpdate,onDelete,sho
             </div>)}
         </div>
       </div>
+      {showExportDlg&&(
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={function(){setShowExportDlg(false);}}>
+          <div style={{background:'var(--surface)',borderRadius:14,width:'min(420px,92vw)',padding:28,boxShadow:'0 24px 80px rgba(0,0,0,.6)'}} onClick={function(ev){ev.stopPropagation();}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <span style={{font:'800 15px Sora,sans-serif',color:'var(--text)'}}>📥 Export to Excel</span>
+              <button onClick={function(){setShowExportDlg(false);}} style={{background:'transparent',border:'none',color:'var(--muted)',fontSize:18,cursor:'pointer',lineHeight:1}}>✕</button>
+            </div>
+            <div style={{marginBottom:14}}>
+              <label className="lbl">From date</label>
+              <input type="date" className="inp" value={expFrom} onChange={function(e){setExpFrom(e.target.value);}}/>
+            </div>
+            <div style={{marginBottom:20}}>
+              <label className="lbl">To date</label>
+              <input type="date" className="inp" value={expTo} onChange={function(e){setExpTo(e.target.value);}}/>
+            </div>
+            <div style={{font:'500 11px Sora,sans-serif',color:'var(--muted)',marginBottom:16}}>Leave both blank to export all tickets. Filters by the <b>Created</b> date field.</div>
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={function(){exportExcelRange(expFrom,expTo);}} style={{flex:1,padding:'12px',background:'#059669',color:'#fff',border:'none',borderRadius:9,font:'800 13px Sora,sans-serif',cursor:'pointer'}}>⬇ Download Excel</button>
+              <button onClick={function(){setShowExportDlg(false);}} style={{padding:'12px 18px',background:'transparent',color:'var(--muted)',border:'1px solid var(--bsoft)',borderRadius:9,font:'700 12px Sora,sans-serif',cursor:'pointer'}}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
