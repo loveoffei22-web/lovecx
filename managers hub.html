@@ -2031,7 +2031,7 @@ function AllComplaints({tickets,onUpdate,onBulkUpdate,onBatchUpdate,onDelete,sho
                   <th style={{width:36,padding:'8px 6px'}}>
                     <input type="checkbox" checked={allPageSel} onChange={toggleAll} style={{cursor:'pointer',width:14,height:14,accentColor:'var(--ek-gold)'}}/>
                   </th>
-                  <th>Date</th><th>Ticket</th><th>Time</th><th>Customer</th><th>Phone</th><th>BU</th><th style={{minWidth:120}}>CATEGORY✏</th><th>STATUS ↻</th><th>RESPONSIBLE✏</th><th style={{minWidth:200}}>DESCRIPTION / NOTE✏</th><th>Details</th>
+                  <th>Date</th><th>Ticket</th><th>Time</th><th>Customer</th><th>Phone</th><th>BU</th><th style={{minWidth:120}}>CATEGORY✏</th><th>STATUS ↻</th><th>RESPONSIBLE✏</th><th style={{minWidth:180}}>DESCRIPTION</th><th style={{minWidth:160}}>NOTE✏</th><th>Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -2073,16 +2073,13 @@ function AllComplaints({tickets,onUpdate,onBulkUpdate,onBatchUpdate,onDelete,sho
                             :<>{t.resp||'—'}{!readOnly&&<span className="xls-hint">dbl-click</span>}</>
                           }
                         </td>
-                        <td className={'xls-cell'+(cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?' xls-editing':'')} style={{fontSize:11,color:'var(--muted)',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',position:'relative'}} onDoubleClick={function(ev){ev.stopPropagation();setCellEdit({id:t.id,field:'note',val:t.note||''});}} onClick={function(ev){if(cellEdit&&cellEdit.id===t.id)ev.stopPropagation();else setExpanded(isExp?null:t.id);}}>
+                        <td style={{fontSize:11,color:'var(--text)',fontWeight:600,maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} onClick={function(){setExpanded(isExp?null:t.id);}}>{t.issue||'—'}</td>
+                        <td className={'xls-cell'+(cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?' xls-editing':'')} style={{fontSize:11,color:'var(--muted)',maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',position:'relative'}} onDoubleClick={function(ev){ev.stopPropagation();setCellEdit({id:t.id,field:'note',val:t.note||''});}} onClick={function(ev){if(cellEdit&&cellEdit.id===t.id)ev.stopPropagation();else setExpanded(isExp?null:t.id);}}>
                           {cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'
                             ?<div style={{position:'absolute',top:0,left:0,zIndex:200,background:'var(--surface)',border:'1.5px solid var(--ek-gold)',borderRadius:6,boxShadow:'0 4px 16px rgba(0,0,0,.4)',minWidth:220}}>
                                 <textarea autoFocus value={cellEdit.val} rows={3} onChange={function(ev){setCellEdit(Object.assign({},cellEdit,{val:ev.target.value}));}} onBlur={function(){commitCellM(t);}} onKeyDown={function(ev){xlsNavM(ev,t,'note',paged);}} style={{width:'100%',border:'none',background:'transparent',padding:'6px 8px',font:'500 11px Sora,sans-serif',color:'var(--fg)',outline:'none',resize:'vertical',display:'block'}} placeholder="Action taken…"/>
                               </div>
-                            :<div style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                              <span style={{color:'var(--text)',fontWeight:600}}>{(t.issue||'—').slice(0,120)}</span>
-                              {t.note&&<span style={{color:'var(--muted)',fontSize:10,marginLeft:6}}>· {t.note.slice(0,60)}</span>}
-                              {!readOnly&&<span className="xls-hint">dbl-click</span>}
-                            </div>
+                            :<>{t.note||<span style={{opacity:.35,fontStyle:'italic'}}>—</span>}{!readOnly&&<span className="xls-hint">dbl-click</span>}</>
                           }
                         </td>
                         <td><span style={{font:'700 10px Sora,sans-serif',color:'var(--ek-gold)'}}>{isExp?'▲ close':'▼ details'}</span></td>
