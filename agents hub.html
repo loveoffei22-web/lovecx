@@ -1491,86 +1491,10 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
                       <td className={'xls-cell'+(cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?' xls-editing':'')} style={{fontSize:13,color:'var(--text2)',maxWidth:140,overflow:cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?'visible':'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',padding:cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'?0:undefined}} onDoubleClick={function(ev){ev.stopPropagation();setCellEdit({id:t.id,field:'note',val:t.note||''});}} onClick={function(ev){if(cellEdit&&cellEdit.id===t.id)ev.stopPropagation();else toggleExpand(t);}}>
                         {cellEdit&&cellEdit.id===t.id&&cellEdit.field==='note'
                           ?<textarea className="xls-inp" autoFocus value={cellEdit.val} onChange={function(ev){setCellEdit(Object.assign({},cellEdit,{val:ev.target.value}));}} onBlur={function(){commitCellA(t);}} onKeyDown={function(ev){if(ev.key!=='Enter')xlsNavA(ev,t,'note',paged);}}/>
-                          :<>{t.note||'—'} {!isEx&&<span style={{color:'var(--ek-gold)',cursor:'pointer',fontSize:10}}>▼</span>}{isEx&&<span style={{color:'var(--ek-gold)',cursor:'pointer',fontSize:10}}>▲</span>}</>
+                          :<>{t.note||'—'} <span style={{color:'var(--ek-gold)',cursor:'pointer',fontSize:10}}>▼</span></>
                         }
                       </td>
                     </tr>
-                    {isEx&&<tr className="exp-row"><td colSpan={11} style={{padding:0}}>
-                      <div style={{background:'var(--surface)',border:'2px solid var(--info)',borderRadius:10,margin:'4px 6px 8px',overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.25)'}}>
-                        {/* ── Header ── */}
-                        <div style={{background:'linear-gradient(135deg,#1E3A8A,#0F2461)',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid rgba(255,255,255,.08)'}}>
-                          <div style={{display:'flex',alignItems:'center',gap:12}}>
-                            <div style={{background:'rgba(255,255,255,.12)',borderRadius:8,padding:'5px 9px',font:'800 11px Sora,sans-serif',color:'#FFC72C',letterSpacing:'.05em'}}>EKEDP ⚡</div>
-                            <div>
-                              <span style={{font:"800 14px/1 'JetBrains Mono',monospace",color:'var(--info)'}}>#{t.num}</span>
-                              <span style={{font:'500 11px Sora,sans-serif',color:'var(--muted)',marginLeft:10}}>{t.name}</span>
-                            </div>
-                            <span style={{marginLeft:4}}>{t.status==='resolved'?<span className="st-res">RESOLVED</span>:t.status==='progress'?<span className="st-prg">IN PROGRESS</span>:<span className="st-unr">UNRESOLVED</span>}</span>
-                          </div>
-                          <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                            <button onClick={function(ev){ev.stopPropagation();handleDelete(t);}} style={{padding:'6px 12px',background:'rgba(239,68,68,.2)',color:'#F87171',border:'1px solid rgba(239,68,68,.4)',borderRadius:7,font:'800 11px Sora,sans-serif',cursor:'pointer'}}>🗑 Delete</button>
-                            <button onClick={function(ev){ev.stopPropagation();setExpanded(null);}} style={{background:'none',border:'none',color:'var(--muted)',cursor:'pointer',font:'700 11px Sora,sans-serif'}}>✕ Close</button>
-                          </div>
-                        </div>
-                        {/* ── Read-only info grid ── */}
-                        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:0,borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-                          {[
-                            ['📍 CUSTOMER ADDRESS',t.addr||'—'],
-                            ['⚡ METER / ACCOUNT NO.',t.meter||'—'],
-                            ['📞 TELEPHONE',t.phone],
-                            ['📧 EMAIL',t.email||'—'],
-                            ['🔗 CHANNEL',t.channel||'Mobile App'],
-                            ['📅 DATE/TIME RECEIVED',t.created?t.created.replace('T',' ').slice(0,19):'—'],
-                            ['✅ RESOLVED DATE',t.resolvedDate||'—'],
-                            ['📊 STATUS (RAW)',t.status?.toUpperCase()||'—'],
-                          ].map(function(f){return(
-                            <div key={f[0]} style={{padding:'10px 14px',borderRight:'1px solid rgba(255,255,255,.05)',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
-                              <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:4}}>{f[0]}</div>
-                              <div style={{font:'600 11px Sora,sans-serif',color:'var(--text)',wordBreak:'break-word'}}>{f[1]}</div>
-                            </div>);})}
-                        </div>
-                        {/* ── Complaint description ── */}
-                        <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-                          <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION ✏</div>
-                          <textarea className="inp" rows={3} value={getEdit(t).issue} onClick={function(ev){ev.stopPropagation();}} onChange={function(ev){ev.stopPropagation();setEdit(t.id,'issue',ev.target.value);}} placeholder="Describe the complaint…" style={{resize:'vertical',fontSize:11,marginBottom:0}}/>
-                        </div>
-                        {/* ── Editable section ── */}
-                        <div style={{padding:'14px 16px',background:'rgba(0,0,0,.15)'}}>
-                          <div style={{font:'700 9px Sora,sans-serif',color:agent.color,textTransform:'uppercase',letterSpacing:'.12em',marginBottom:12}}>✏️ UPDATE THIS TICKET</div>
-                          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
-                            <div>
-                              <label className="lbl">Category</label>
-                              <select className="sel" value={e.category} onClick={function(ev){ev.stopPropagation();}} onChange={function(ev){ev.stopPropagation();setEdit(t.id,'category',ev.target.value);const auto=getResp(ev.target.value);if(auto)setEdit(t.id,'resp',auto);}}>
-                                {CATS.map(function(c){return <option key={c} value={c}>{c}</option>;})}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="lbl">Responsible Party</label>
-                              <select className="sel" value={e.resp} onClick={function(ev){ev.stopPropagation();}} onChange={function(ev){ev.stopPropagation();setEdit(t.id,'resp',ev.target.value);}}>
-                                <option value="">— Select —</option>
-                                {RESP_LIST.map(function(r){return <option key={r} value={r}>{r}</option>;})}
-                              </select>
-                            </div>
-                          </div>
-                          <div style={{marginBottom:10}}>
-                            <label className="lbl">Status</label>
-                            <div style={{display:'flex',gap:8}}>
-                              {[{v:'progress',l:'⏳ In Progress',c:'#F59E0B'},{v:'resolved',l:'✅ Resolved',c:'#22C55E'},{v:'unresolved',l:'🔴 Unresolved',c:'#EF4444'}].map(function(s){return(
-                                <button key={s.v} onClick={function(ev){ev.stopPropagation();setEdit(t.id,'status',s.v);}} style={{flex:1,padding:'7px',border:'1px solid '+(e.status===s.v?s.c:'var(--bsoft)'),borderRadius:7,background:e.status===s.v?s.c+'22':'transparent',color:e.status===s.v?s.c:'var(--muted)',font:'700 11px Sora,sans-serif',cursor:'pointer'}}>{s.l}</button>
-                              );})}
-                            </div>
-                          </div>
-                          <div style={{marginBottom:12}}>
-                            <label className="lbl">Action Taken / Resolution Note</label>
-                            <textarea className="inp" rows={2} value={e.note} onClick={function(ev){ev.stopPropagation();}} onChange={function(ev){ev.stopPropagation();setEdit(t.id,'note',ev.target.value);}} placeholder="Add action taken or resolution note…" style={{resize:'vertical',fontSize:11}}/>
-                          </div>
-                          <div style={{display:'flex',gap:8}}>
-                            <button onClick={function(ev){ev.stopPropagation();saveUpdate(t);}} style={{flex:1,padding:'10px',background:agent.color,color:'#0A1A4F',border:'none',borderRadius:8,font:'800 13px Sora,sans-serif',cursor:'pointer'}}>💾 Save Update</button>
-                            <button onClick={function(ev){ev.stopPropagation();handleDelete(t);}} style={{padding:'10px 18px',background:'rgba(239,68,68,.15)',color:'#F87171',border:'1px solid rgba(239,68,68,.35)',borderRadius:8,font:'800 12px Sora,sans-serif',cursor:'pointer'}}>🗑 Delete</button>
-                          </div>
-                        </div>
-                      </div>
-                    </td></tr>}
                   </React.Fragment>);})}
                 {!paged.length&&<tr><td colSpan={12} style={{padding:'32px',textAlign:'center',color:'var(--muted)'}}>No tickets match your filters.</td></tr>}
               </tbody>
@@ -1588,6 +1512,80 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
           </div>}
         </div>
       </div>
+      {(function(){
+        const mt=expanded?filt.find(function(x){return x.id===expanded;}):null;
+        if(!mt)return null;
+        const me=getEdit(mt);
+        return(
+          <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(3px)'}} onClick={function(){setExpanded(null);}}>
+            <div style={{background:'var(--surface)',borderRadius:14,width:'min(820px,96vw)',maxHeight:'92vh',overflowY:'auto',border:'2px solid var(--info)',boxShadow:'0 24px 80px rgba(0,0,0,.6)',display:'flex',flexDirection:'column'}} onClick={function(ev){ev.stopPropagation();}}>
+              {/* Header */}
+              <div style={{background:'linear-gradient(135deg,#1E3A8A,#0F2461)',padding:'14px 18px',display:'flex',alignItems:'center',justifyContent:'space-between',borderRadius:'12px 12px 0 0',flexShrink:0}}>
+                <div style={{display:'flex',alignItems:'center',gap:12}}>
+                  <div style={{background:'rgba(255,255,255,.12)',borderRadius:8,padding:'5px 9px',font:'800 11px Sora,sans-serif',color:'#FFC72C',letterSpacing:'.05em'}}>EKEDP ⚡</div>
+                  <div>
+                    <span style={{font:"800 15px/1 'JetBrains Mono',monospace",color:'var(--info)'}}>#{mt.num}</span>
+                    <span style={{font:'500 12px Sora,sans-serif',color:'var(--muted)',marginLeft:10}}>{mt.name}</span>
+                  </div>
+                  <span>{mt.status==='resolved'?<span className="st-res">RESOLVED</span>:mt.status==='progress'?<span className="st-prg">IN PROGRESS</span>:<span className="st-unr">UNRESOLVED</span>}</span>
+                </div>
+                <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                  <button onClick={function(){handleDelete(mt);}} style={{padding:'7px 14px',background:'rgba(239,68,68,.2)',color:'#F87171',border:'1px solid rgba(239,68,68,.4)',borderRadius:7,font:'800 11px Sora,sans-serif',cursor:'pointer'}}>🗑 Delete</button>
+                  <button onClick={function(){setExpanded(null);}} style={{padding:'7px 14px',background:'rgba(255,255,255,.08)',color:'var(--muted)',border:'1px solid var(--bsoft)',borderRadius:7,font:'700 11px Sora,sans-serif',cursor:'pointer'}}>✕ Close</button>
+                </div>
+              </div>
+              {/* Info grid */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:0,borderBottom:'1px solid rgba(255,255,255,.06)'}}>
+                {[['📍 CUSTOMER ADDRESS',mt.addr||'—'],['⚡ METER / ACCOUNT NO.',mt.meter||'—'],['📞 TELEPHONE',mt.phone],['📧 EMAIL',mt.email||'—'],['🔗 CHANNEL',mt.channel||'Mobile App'],['📅 DATE/TIME RECEIVED',mt.created?mt.created.replace('T',' ').slice(0,19):'—'],['✅ RESOLVED DATE',mt.resolvedDate||'—'],['📊 STATUS (RAW)',mt.status?.toUpperCase()||'—']].map(function(f){return(
+                  <div key={f[0]} style={{padding:'10px 14px',borderRight:'1px solid rgba(255,255,255,.05)',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
+                    <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:4}}>{f[0]}</div>
+                    <div style={{font:'600 11px Sora,sans-serif',color:'var(--text)',wordBreak:'break-word'}}>{f[1]}</div>
+                  </div>);})}
+              </div>
+              {/* Complaint description */}
+              <div style={{padding:'12px 16px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
+                <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION ✏</div>
+                <textarea className="inp" rows={3} value={me.issue} onChange={function(ev){setEdit(mt.id,'issue',ev.target.value);}} placeholder="Describe the complaint…" style={{resize:'vertical',fontSize:11,marginBottom:0}}/>
+              </div>
+              {/* Editable section */}
+              <div style={{padding:'16px 18px',background:'rgba(0,0,0,.15)'}}>
+                <div style={{font:'700 9px Sora,sans-serif',color:agent.color,textTransform:'uppercase',letterSpacing:'.12em',marginBottom:12}}>✏️ UPDATE THIS TICKET</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
+                  <div>
+                    <label className="lbl">Category</label>
+                    <select className="sel" value={me.category} onChange={function(ev){setEdit(mt.id,'category',ev.target.value);const auto=getResp(ev.target.value);if(auto)setEdit(mt.id,'resp',auto);}}>
+                      {CATS.map(function(c){return <option key={c} value={c}>{c}</option>;})}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="lbl">Responsible Party</label>
+                    <select className="sel" value={me.resp} onChange={function(ev){setEdit(mt.id,'resp',ev.target.value);}}>
+                      <option value="">— Select —</option>
+                      {RESP_LIST.map(function(r){return <option key={r} value={r}>{r}</option>;})}
+                    </select>
+                  </div>
+                </div>
+                <div style={{marginBottom:12}}>
+                  <label className="lbl">Status</label>
+                  <div style={{display:'flex',gap:8}}>
+                    {[{v:'progress',l:'⏳ In Progress',c:'#F59E0B'},{v:'resolved',l:'✅ Resolved',c:'#22C55E'},{v:'unresolved',l:'🔴 Unresolved',c:'#EF4444'}].map(function(s){return(
+                      <button key={s.v} onClick={function(){setEdit(mt.id,'status',s.v);}} style={{flex:1,padding:'8px',border:'1px solid '+(me.status===s.v?s.c:'var(--bsoft)'),borderRadius:7,background:me.status===s.v?s.c+'22':'transparent',color:me.status===s.v?s.c:'var(--muted)',font:'700 11px Sora,sans-serif',cursor:'pointer'}}>{s.l}</button>
+                    );})}
+                  </div>
+                </div>
+                <div style={{marginBottom:14}}>
+                  <label className="lbl">Action Taken / Resolution Note</label>
+                  <textarea className="inp" rows={2} value={me.note} onChange={function(ev){setEdit(mt.id,'note',ev.target.value);}} placeholder="Add action taken or resolution note…" style={{resize:'vertical',fontSize:11}}/>
+                </div>
+                <div style={{display:'flex',gap:8}}>
+                  <button onClick={function(){saveUpdate(mt);}} style={{flex:1,padding:'11px',background:agent.color,color:'#0A1A4F',border:'none',borderRadius:8,font:'800 13px Sora,sans-serif',cursor:'pointer'}}>💾 Save Update</button>
+                  <button onClick={function(){handleDelete(mt);}} style={{padding:'11px 20px',background:'rgba(239,68,68,.15)',color:'#F87171',border:'1px solid rgba(239,68,68,.35)',borderRadius:8,font:'800 12px Sora,sans-serif',cursor:'pointer'}}>🗑 Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
