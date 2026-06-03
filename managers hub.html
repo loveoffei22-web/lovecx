@@ -1028,7 +1028,8 @@ function Dashboard({tickets,carryTix,shifts,onShift,onSettings,onNav,signedInNam
         var TODAY=new Date();
         // Carry-forward: use carryTix (unresolved from prev month) passed from App
         // allCarry = all tickets from prior months (any status), allPending = unresolved subset
-        var watNowYM=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lagos'})).toISOString().slice(0,7);
+        var _watNow=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
+        var watNowYM=_watNow.getFullYear()+'-'+String(_watNow.getMonth()+1).padStart(2,'0');
         var allCarry=tickets.filter(function(t){var ym=shiftWatYM(t);return ym&&ym<watNowYM;});
         var allPending=allCarry.filter(function(t){return t.status!=='resolved';});
         var cfTotal=allCarry.length;
@@ -1270,7 +1271,7 @@ function DailyReport({tickets,onUpdate,onSettings}){
   const mayRate=mayTix.length?Math.round(mayRes/mayTix.length*100):0;
 
   // ── Carry-forward (pending from May) ──────────────────────────────
-  const carryAll=mayTix.filter(function(t){return t.status!=='resolved';});
+  const carryAll=activeMonth==='june'?mayTix.filter(function(t){return t.status!=='resolved';}):[];
   const carryFiltered=(function(){
     var r=carryAll;
     if(cfFilter!=='all')r=r.filter(function(t){return t.status===cfFilter;});
@@ -2898,11 +2899,13 @@ function shiftWatDate(t){
     var d=new Date(raw);
     if(isNaN(d.getTime())){
       var dm=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-      if(dm)d=new Date(dm[3]+'-'+dm[2].padStart(2,'0')+'-'+dm[1].padStart(2,'0'));
+      if(dm)d=new Date(dm[3]+'-'+dm[1].padStart(2,'0')+'-'+dm[2].padStart(2,'0'));
       if(isNaN(d.getTime()))return null;
     }
     var wat=new Date(d.toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
+    var origMonth=wat.getMonth();
     if(wat.getHours()<17)wat.setDate(wat.getDate()-1);
+    if(wat.getMonth()!==origMonth)wat.setDate(wat.getDate()+1);
     return wat.getFullYear()+'-'+String(wat.getMonth()+1).padStart(2,'0')+'-'+String(wat.getDate()).padStart(2,'0');
   }catch(e){return null;}
 }
@@ -4775,7 +4778,7 @@ function App(){
   },[tickets,currentYM]);
   // Carry-forward: unresolved tickets from the month immediately before activeMonth
   const prevYM=React.useMemo(function(){var d=new Date(activeMonth+'-15');d.setMonth(d.getMonth()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');},[activeMonth]);
-  const carryTix=React.useMemo(function(){return tickets.filter(function(t){return shiftWatYM(t)===prevYM&&t.status!=='resolved';});},[tickets,prevYM]);
+  const carryTix=React.useMemo(function(){if(activeMonth==='2026-05')return[];return tickets.filter(function(t){return shiftWatYM(t)===prevYM&&t.status!=='resolved';});},[tickets,prevYM,activeMonth]);
 
   // Auto-snap to latest month whenever new ticket data arrives
   const latestYM=React.useMemo(function(){
