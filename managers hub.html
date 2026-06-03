@@ -1348,13 +1348,13 @@ function DailyReport({tickets,onUpdate,onSettings}){
 
   // ── KPI strip ─────────────────────────────────────────────────────
   function kpiStrip(items){
-    return React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:18}},
+    return React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:8,marginBottom:10}},
       items.map(function(k){
         return React.createElement('div',{key:k.l,style:Object.assign({},cardS,{padding:0})},
           React.createElement('div',{style:{height:3,background:k.c,borderRadius:'12px 12px 0 0'}}),
-          React.createElement('div',{style:{padding:'14px 16px'}},
+          React.createElement('div',{style:{padding:'8px 12px'}},
             React.createElement('div',{style:{font:'700 9px/1 Sora,sans-serif',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.12em',marginBottom:8}},k.l),
-            React.createElement('div',{style:{fontFamily:'JetBrains Mono,monospace',fontWeight:900,fontSize:30,lineHeight:1,color:k.c,marginBottom:4}},k.v),
+            React.createElement('div',{style:{fontFamily:'JetBrains Mono,monospace',fontWeight:900,fontSize:22,lineHeight:1,color:k.c,marginBottom:4}},k.v),
             k.sub&&React.createElement('div',{style:{font:'500 10px/1 Sora,sans-serif',color:'var(--muted)'}},k.sub)
           )
         );
@@ -1504,12 +1504,12 @@ function DailyReport({tickets,onUpdate,onSettings}){
     <div style={{minHeight:'100vh',background:'var(--bg)'}}>
 
       {/* ── HERO ────────────────────────────────────────────────── */}
-      <div style={{background:'linear-gradient(135deg,#001040 0%,#001F5C 55%,#0a0020 100%)',padding:'20px 28px',borderBottom:'3px solid #E30613',position:'relative',overflow:'hidden'}}>
+      <div style={{background:'linear-gradient(135deg,#001040 0%,#001F5C 55%,#0a0020 100%)',padding:'10px 28px',borderBottom:'3px solid #E30613',position:'relative',overflow:'hidden'}}>
         <div style={{position:'absolute',top:0,right:0,width:320,height:'100%',background:'radial-gradient(circle,rgba(227,6,19,.14) 0%,transparent 70%)',pointerEvents:'none'}}/>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:18}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
           <div>
             <div style={{font:'700 9px/1 Sora,sans-serif',color:'#E30613',letterSpacing:'.18em',textTransform:'uppercase',marginBottom:6}}>EKEDP CX HUB · MONTHLY REPORT</div>
-            <div style={{font:'800 22px/1.1 Sora,sans-serif',color:'#fff',fontStyle:'italic',marginBottom:4}}>Month-by-Month Overview</div>
+            <div style={{font:'800 18px/1.1 Sora,sans-serif',color:'#fff',fontStyle:'italic',marginBottom:2}}>Month-by-Month Overview</div>
             <div style={{font:'500 11px/1 Sora,sans-serif',color:'rgba(255,255,255,.4)'}}>EKEDP Customer Experience · Marina HQ</div>
           </div>
           <ScreenClock onSettings={onSettings}/>
@@ -1530,7 +1530,7 @@ function DailyReport({tickets,onUpdate,onSettings}){
 
       {/* ── MAY VIEW ─────────────────────────────────────────────── */}
       {activeMonth==='may'&&(
-        <div style={{padding:'22px 28px'}}>
+        <div style={{padding:'12px 28px'}}>
 
           {/* Closed banner */}
           <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18,padding:'12px 18px',background:'rgba(227,6,19,.07)',border:'1px solid rgba(227,6,19,.2)',borderRadius:10}}>
@@ -1627,7 +1627,7 @@ function DailyReport({tickets,onUpdate,onSettings}){
 
       {/* ── JUNE VIEW ────────────────────────────────────────────── */}
       {activeMonth==='june'&&(
-        <div style={{padding:'22px 28px'}}>
+        <div style={{padding:'12px 28px'}}>
 
           {/* Active month banner */}
           <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18,padding:'12px 18px',background:'rgba(34,197,94,.06)',border:'1px solid rgba(34,197,94,.15)',borderRadius:10}}>
@@ -1653,23 +1653,23 @@ function DailyReport({tickets,onUpdate,onSettings}){
 
           {/* Brought forward hero section */}
           <div style={Object.assign({},cardS,{border:'1px solid rgba(245,158,11,.3)',marginBottom:14})}>
-            <div style={{padding:'16px 22px',background:'linear-gradient(100deg,rgba(245,158,11,.1) 0%,rgba(239,68,68,.07) 100%)',borderBottom:'1px solid rgba(245,158,11,.2)'}}>
+            <div style={{padding:'10px 16px',background:'linear-gradient(100deg,rgba(245,158,11,.1) 0%,rgba(239,68,68,.07) 100%)',borderBottom:'1px solid rgba(245,158,11,.2)'}}>
               <div style={{display:'flex',alignItems:'flex-start',gap:16,flexWrap:'wrap'}}>
                 <div style={{flex:1}}>
                   <div style={{font:'700 9px/1 Sora,sans-serif',color:'#FCD34D',textTransform:'uppercase',letterSpacing:'.14em',marginBottom:6}}>⚠️ BROUGHT FORWARD FROM MAY 2026</div>
-                  <div style={{font:'700 18px/1.2 Sora,sans-serif',color:'#fff',marginBottom:4}}>{carryAll.length} open tickets riding into June</div>
+                  <div style={{font:'700 14px/1.2 Sora,sans-serif',color:'#fff',marginBottom:2}}>{carryAll.length} open tickets riding into June</div>
                   <div style={{font:'500 11px/1 Sora,sans-serif',color:'var(--muted)'}}>Update status here as field support resolves each item · Ages counted from original May date</div>
                 </div>
                 <div style={{display:'flex',gap:8}}>
-                  <div style={{background:'rgba(239,68,68,.15)',border:'1px solid rgba(239,68,68,.25)',borderRadius:10,padding:'10px 16px',textAlign:'center'}}>
+                  <div style={{background:'rgba(239,68,68,.15)',border:'1px solid rgba(239,68,68,.25)',borderRadius:10,padding:'6px 12px',textAlign:'center'}}>
                     <div style={{fontFamily:'JetBrains Mono,monospace',fontWeight:900,fontSize:22,color:'#FCA5A5'}}>{mayUnr}</div>
                     <div style={{font:'600 9px/1 Sora,sans-serif',color:'var(--muted)',marginTop:4,textTransform:'uppercase'}}>Unresolved</div>
                   </div>
-                  <div style={{background:'rgba(245,158,11,.15)',border:'1px solid rgba(245,158,11,.25)',borderRadius:10,padding:'10px 16px',textAlign:'center'}}>
+                  <div style={{background:'rgba(245,158,11,.15)',border:'1px solid rgba(245,158,11,.25)',borderRadius:10,padding:'6px 12px',textAlign:'center'}}>
                     <div style={{fontFamily:'JetBrains Mono,monospace',fontWeight:900,fontSize:22,color:'#FCD34D'}}>{mayPrg}</div>
                     <div style={{font:'600 9px/1 Sora,sans-serif',color:'var(--muted)',marginTop:4,textTransform:'uppercase'}}>In Progress</div>
                   </div>
-                  <div style={{background:'rgba(239,68,68,.12)',border:'1px solid rgba(239,68,68,.2)',borderRadius:10,padding:'10px 16px',textAlign:'center'}}>
+                  <div style={{background:'rgba(239,68,68,.12)',border:'1px solid rgba(239,68,68,.2)',borderRadius:10,padding:'6px 12px',textAlign:'center'}}>
                     <div style={{fontFamily:'JetBrains Mono,monospace',fontWeight:900,fontSize:18,color:'#FCA5A5'}}>{carryAll.filter(function(t){return daysOpen(t)>=14;}).length}</div>
                     <div style={{font:'600 9px/1 Sora,sans-serif',color:'#FCA5A5',marginTop:4,textTransform:'uppercase'}}>🔴 Critical</div>
                   </div>
