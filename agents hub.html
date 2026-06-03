@@ -2423,40 +2423,62 @@ function CloudSync({agent,tickets,setTickets,showToast,agentShift}){
 
   async function pushNow(){
     if(!pushUrl){showToast('Set your Push URL first','error');return;}
-    setSaving(true);setStatus({msg:'Pushing to SharePoint via Power Automate…',ok:true});
+    setSaving(true);
     try{
       const watNow=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
       const todayStr=watNow.getFullYear()+'-'+String(watNow.getMonth()+1).padStart(2,'0')+'-'+String(watNow.getDate()).padStart(2,'0');
       const todayTix=tickets.filter(function(t){return !t._baseline&&inDutyWindow(t,agentShift);});
+      if(!todayTix.length){showToast('No tickets in duty window to push.','error');setSaving(false);return;}
+
       function toSpStatus(s){return s==='resolved'?'Closed':s==='progress'?'Assigned':'Pending';}
-      const mappedTix=todayTix.map(function(t){return Object.assign({},t,{spStatus:toSpStatus(t.status)});});
-      const payload={agentId:agent.id,agentName:agent.name,date:todayStr,tickets:mappedTix,pushedAt:new Date().toISOString()};
-      let res,lastErr;
-      for(let attempt=1;attempt<=3;attempt++){
-        try{
-          if(attempt>1){
-            const wait=(attempt-1)*4000;
-            setStatus({msg:'Retry '+attempt+'/3 — waiting '+(wait/1000)+'s…',ok:true});
-            await new Promise(function(r){setTimeout(r,wait);});
+
+      let pushed=0,failed=0;
+      for(let i=0;i<todayTix.length;i++){
+        const t=todayTix[i];
+        setStatus({msg:'Pushing ticket '+(i+1)+'/'+todayTix.length+' (#'+t.num+')…',ok:true});
+
+        // Payload matches the flow's trigger schema exactly (single-ticket)
+        const payload={
+          num:       t.num||'',
+          status:    toSpStatus(t.status),
+          responsible: t.resp||t.responsible||'',
+          actionTaken: t.note||'',
+          resolvedBy:  t.status==='resolved'?(t.resp||agent.name):'',
+          resolvedDate:t.status==='resolved'?todayStr:'',
+          agentName:   agent.name,
+          updatedBy:   agent.name,
+        };
+
+        let res,lastErr;
+        for(let attempt=1;attempt<=3;attempt++){
+          try{
+            if(attempt>1){
+              await new Promise(function(r){setTimeout(r,(attempt-1)*4000);});
+              setStatus({msg:'Ticket '+(i+1)+'/'+todayTix.length+' — retry '+attempt+'/3…',ok:true});
+            }
+            const ctrl=new AbortController();
+            const tid=setTimeout(function(){ctrl.abort();},30000);
+            res=await fetch(pushUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctrl.signal});
+            clearTimeout(tid);
+            if(res.ok||res.status===404)break;
+            lastErr=new Error('HTTP '+res.status+(res.status===502?' (gateway timeout)':res.status===503?' (unavailable)':''));
+            if(res.status<500)break;
+          }catch(err){
+            lastErr=err.name==='AbortError'?new Error('Timed out after 30 s'):err;
+            if(attempt===3){lastErr=lastErr;break;}
           }
-          const ctrl=new AbortController();
-          const tid=setTimeout(function(){ctrl.abort();},30000);
-          res=await fetch(pushUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctrl.signal});
-          clearTimeout(tid);
-          if(res.ok||res.status===404)break;
-          lastErr=new Error('HTTP '+res.status+(res.status===502?' (gateway timeout — PA flow slow to start)':res.status===503?' (service unavailable)':''));
-          if(res.status<500)break;
-        }catch(err){
-          lastErr=err.name==='AbortError'?new Error('Request timed out after 30 s'):err;
-          if(attempt===3)throw lastErr;
         }
+        if(res&&res.ok){pushed++;}
+        else{failed++;console.warn('[Push] ticket #'+t.num+' failed:',lastErr?.message||res?.status);}
       }
-      if(!res||!res.ok)throw lastErr||new Error('HTTP '+(res?res.status:'no response'));
+
       const now=new Date().toLocaleString('en-GB',{timeZone:'Africa/Lagos'});
       setLastSync(now);localStorage.setItem('ek_last_sync',now);
-      const msg='✅ Pushed '+todayTix.length+' tickets to SharePoint.';
-      setStatus({msg,ok:true});showToast(msg);
-    }catch(e){setStatus({msg:'Push failed: '+e.message,ok:false});showToast('Push failed','error');}
+      const msg=failed===0
+        ?'✅ Pushed '+pushed+' ticket'+(pushed!==1?'s':'')+' to SharePoint.'
+        :'⚠️ '+pushed+' pushed, '+failed+' failed — check flow logs.';
+      setStatus({msg,ok:failed===0});showToast(msg,failed>0?'error':undefined);
+    }catch(e){setStatus({msg:'Push failed: '+e.message,ok:false});showToast('Push failed: '+e.message,'error');}
     finally{setSaving(false);}
   }
 

@@ -4575,52 +4575,65 @@ function CloudSync({tickets,setTickets,showToast}){
 
   async function pushNow(){
     if(!pushUrl){showToast('Set your Push URL first','error');return;}
-    setSaving(true);setStatus({msg:'Pushing to SharePoint via Power Automate…',ok:true});addLog('Preparing data…',null);
+    setSaving(true);addLog('Preparing tickets…',null);
     try{
       const watNow=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
       const todayStr=watNow.getFullYear()+'-'+String(watNow.getMonth()+1).padStart(2,'0')+'-'+String(watNow.getDate()).padStart(2,'0');
-      const byAgent={};
-      tickets.forEach(function(t){
-        if(t._baseline)return;
-        const tDate=(t.created||t.day||'').toString().slice(0,10);
-        if(tDate!==todayStr)return;
-        const key=t.agent||'manager';
-        if(!byAgent[key])byAgent[key]=[];
-        byAgent[key].push(t);
+      const todayTix=tickets.filter(function(t){
+        if(t._baseline)return false;
+        return (t.created||t.day||'').toString().slice(0,10)===todayStr;
       });
-      const incrementalCount=Object.values(byAgent).reduce(function(a,arr){return a+arr.length;},0);
-      try{byAgent._shifts=JSON.parse(localStorage.getItem('ek_v2_shifts')||'{}');}catch(e){}
-      try{var g=localStorage.getItem('ek_guide');if(g){byAgent._guide=JSON.parse(g);}}catch(e){}
-      const payload=Object.assign({},byAgent,{pushedAt:new Date().toISOString(),date:todayStr});
+      if(!todayTix.length){showToast('No tickets for today to push.','error');setSaving(false);return;}
 
-      // Retry up to 3 attempts with 30 s timeout each, backoff 4 s → 8 s
-      let res,lastErr;
-      for(let attempt=1;attempt<=3;attempt++){
-        try{
-          if(attempt>1){
-            const wait=(attempt-1)*4000;
-            addLog('Retry '+attempt+'/3 in '+(wait/1000)+'s…',null);
-            setStatus({msg:'Retry '+attempt+'/3 — waiting…',ok:true});
-            await new Promise(function(r){setTimeout(r,wait);});
+      function toSpStatus(s){return s==='resolved'?'Closed':s==='progress'?'Assigned':'Pending';}
+
+      let pushed=0,failed=0;
+      for(let i=0;i<todayTix.length;i++){
+        const t=todayTix[i];
+        setStatus({msg:'Pushing ticket '+(i+1)+'/'+todayTix.length+' (#'+t.num+')…',ok:true});
+
+        // Matches the flow's single-ticket trigger schema exactly
+        const payload={
+          num:         t.num||'',
+          status:      toSpStatus(t.status),
+          responsible: t.resp||t.responsible||'',
+          actionTaken: t.note||'',
+          resolvedBy:  t.status==='resolved'?(t.resp||'Manager'):'',
+          resolvedDate:t.status==='resolved'?todayStr:'',
+          agentName:   t.agent||'manager',
+          updatedBy:   'Manager',
+        };
+
+        let res,lastErr;
+        for(let attempt=1;attempt<=3;attempt++){
+          try{
+            if(attempt>1){
+              const wait=(attempt-1)*4000;
+              addLog('Ticket '+(i+1)+' retry '+attempt+'/3 in '+(wait/1000)+'s…',null);
+              await new Promise(function(r){setTimeout(r,wait);});
+            }
+            const ctrl=new AbortController();
+            const tid=setTimeout(function(){ctrl.abort();},30000);
+            res=await fetch(pushUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctrl.signal});
+            clearTimeout(tid);
+            if(res.ok||res.status===404)break;
+            lastErr=new Error('HTTP '+res.status+(res.status===502?' (gateway timeout)':res.status===503?' (unavailable)':''));
+            if(res.status<500)break;
+          }catch(err){
+            lastErr=err.name==='AbortError'?new Error('Timed out after 30 s'):err;
+            if(attempt===3)break;
           }
-          const ctrl=new AbortController();
-          const tid=setTimeout(function(){ctrl.abort();},30000);
-          res=await fetch(pushUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctrl.signal});
-          clearTimeout(tid);
-          if(res.ok||res.status===404)break; // 404 = not retryable
-          lastErr=new Error('HTTP '+res.status+(res.status===502?' (gateway timeout — PA flow slow to start)':res.status===503?' (service unavailable)':''));
-          if(res.status<500)break; // 4xx not retryable
-        }catch(err){
-          lastErr=err.name==='AbortError'?new Error('Request timed out after 30 s (Power Automate did not respond)'):err;
-          if(attempt===3)throw lastErr;
         }
+        if(res&&res.ok){pushed++;}
+        else{failed++;addLog('Ticket #'+t.num+' failed: '+(lastErr?.message||res?.status),false);console.warn('[Push] #'+t.num,lastErr?.message||res?.status);}
       }
-      if(!res||!res.ok)throw lastErr||new Error('HTTP '+(res?res.status:'no response'));
 
       const now=new Date().toLocaleString('en-GB',{timeZone:'Africa/Lagos'});
-      setLastSync(now);localStorage.setItem('ek_last_sync',now);setConnected(true);
-      const msg='✅ Pushed '+incrementalCount+' tickets to SharePoint.';
-      setStatus({msg,ok:true});addLog(msg,true);showToast(msg);
+      setLastSync(now);localStorage.setItem('ek_last_sync',now);setConnected(pushed>0);
+      const msg=failed===0
+        ?'✅ Pushed '+pushed+' ticket'+(pushed!==1?'s':'')+' to SharePoint.'
+        :'⚠️ '+pushed+' pushed, '+failed+' failed — check flow logs.';
+      setStatus({msg,ok:failed===0});addLog(msg,failed===0);showToast(msg,failed>0?'error':undefined);
     }catch(e){
       const msg='Push failed: '+e.message;
       setStatus({msg,ok:false});addLog(msg,false);showToast(msg,'error');
