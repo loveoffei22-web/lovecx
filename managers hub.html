@@ -1895,31 +1895,40 @@ function AllComplaints({tickets,onUpdate,onBulkUpdate,onBatchUpdate,onDelete,sho
     const resolved=list.filter(function(t){return t.status==='resolved';});
     const inprog  =list.filter(function(t){return t.status==='progress';});
     const unresolv=list.filter(function(t){return t.status==='unresolved';});
-    const wb=XLSX.utils.book_new();
-    // Summary sheet
-    const cats={};
-    list.forEach(function(t){const c=(t.category||'Uncategorised').toUpperCase();if(!cats[c])cats[c]={res:0,prg:0,unr:0,resp:t.resp||''};if(t.status==='resolved')cats[c].res++;else if(t.status==='progress')cats[c].prg++;else cats[c].unr++;});
-    const summRows=[['COMPLAINT CATEGORY REPORT'],['S/N','Complaint Category','Responsible Party','Resolved','In Progress','Unresolved','Grand Total']];
-    let sn=1;Object.entries(cats).forEach(function([cat,v]){summRows.push([sn++,cat,v.resp,v.res,v.prg,v.unr,v.res+v.prg+v.unr]);});
-    summRows.push([null,'TOTAL',null,resolved.length,inprog.length,unresolv.length,list.length]);
-    summRows.push([]);
-    summRows.push(['EXECUTIVE SUMMARY']);
-    summRows.push(['As at '+watNowAC.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Lagos'})+', '+dStrAC]);
-    summRows.push([]);
-    summRows.push(['A total of '+list.length+' complaints were received and processed across all categories.']);
+    // Build category summary — preserve first resp seen per category
+    const cats={};const catOrder=[];
+    list.forEach(function(t){
+      const c=(t.category||'UNCATEGORISED').toUpperCase();
+      if(!cats[c]){cats[c]={res:0,prg:0,unr:0,resp:t.resp||''};catOrder.push(c);}
+      if(t.status==='resolved')cats[c].res++;
+      else if(t.status==='progress')cats[c].prg++;
+      else cats[c].unr++;
+    });
     const resPct=list.length?Math.round(resolved.length/list.length*100):0;
     const prgPct=list.length?Math.round(inprog.length/list.length*100):0;
     const unrPct=list.length?Math.round(unresolv.length/list.length*100):0;
-    summRows.push([resolved.length+' ('+resPct+'%) have been fully resolved. '+inprog.length+' ('+prgPct+'%) are currently in progress. '+unresolv.length+' ('+unrPct+'%) remain unresolved and require urgent attention.']);
-    const wsSumm=XLSX.utils.aoa_to_sheet(summRows);
-    wsSumm['!cols']=[{wch:5},{wch:46},{wch:26},{wch:10},{wch:12},{wch:12},{wch:12}];
-    XLSX.utils.book_append_sheet(wb,wsSumm,'Summary Report');
-    // Data sheets
-    function addSheet(wb,data,name){const ws=XLSX.utils.aoa_to_sheet([EXCEL_H,...buildExcelRows(data)]);ws['!cols']=EXCEL_COLS;XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31));}
-    addSheet(wb,list,'All Complaints');
-    addSheet(wb,resolved,'All Resolved');
-    addSheet(wb,inprog,'In Progress');
-    addSheet(wb,unresolv,'Unresolved');
+    const timeStr=watNowAC.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Lagos'});
+    const rows=[
+      ['COMPLAINT CATEGORY REPORT','','','','','',''],
+      ['S/N','Complaint Category','Responsible Party','Resolved','In Progress','Unresolved','Grand Total'],
+    ];
+    catOrder.forEach(function(cat,i){
+      const v=cats[cat];
+      rows.push([i+1,cat,v.resp,v.res,v.prg,v.unr,v.res+v.prg+v.unr]);
+    });
+    rows.push(['TOTAL','','',resolved.length,inprog.length,unresolv.length,list.length]);
+    rows.push(['','','','','','','']);
+    rows.push(['EXECUTIVE SUMMARY','','','','','','']);
+    rows.push(['As at '+timeStr+', '+dStrAC,'','','','','','']);
+    rows.push(['','','','','','','']);
+    rows.push(['A total of '+list.length+' complaints were received and processed across all categories.','','','','','','']);
+    rows.push([resolved.length+' ('+resPct+'%) have been fully resolved. '+inprog.length+' ('+prgPct+'%) are currently in progress. '+unresolv.length+' ('+unrPct+'%) remain unresolved and require urgent attention.','','','','','','']);
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:5},{wch:46},{wch:30},{wch:10},{wch:12},{wch:12},{wch:12}];
+    // Merge title cell A1 across all 7 columns
+    ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Complaint Category Report');
     XLSX.writeFile(wb,'EKEDP_'+label+'_'+todayStrAC+'.xlsx');
     showToast&&showToast('📅 Excel exported ✅');
   }
