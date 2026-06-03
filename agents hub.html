@@ -972,7 +972,6 @@ function shiftWatDate(t){
       if(isNaN(d.getTime()))return null;
     }
     var wat=new Date(d.toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
-    if(wat.getHours()<17)wat.setDate(wat.getDate()-1);
     return wat.getFullYear()+'-'+String(wat.getMonth()+1).padStart(2,'0')+'-'+String(wat.getDate()).padStart(2,'0');
   }catch(e){return null;}
 }
@@ -2547,7 +2546,7 @@ function EditModal({ticket,agent,onSave,onDelete,onClose}){
 function DataScreen({agent,tickets,setTickets,showToast,agentShift}){
   const watNow=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Lagos'}));
   const todayStr=watNow.toISOString().slice(0,10);
-  const todayTix=tickets.filter(function(t){return inDutyWindow(t,agentShift);});
+  const todayTix=tickets.filter(function(t){return (t.agent===agent.id||t.agentId===agent.id)&&inDutyWindow(t,agentShift);});
   const[dragging,setDragging]=useState(false);
   const[preview,setPreview]=useState(null);
   const[tab,setTab]=useState('export');
@@ -2575,7 +2574,7 @@ function DataScreen({agent,tickets,setTickets,showToast,agentShift}){
           <div className="card">
             <div className="card-head"><h3>📋 My Tickets ({todayTix.length})</h3><button onClick={dlToday} style={{padding:'8px 12px',background:'var(--agent)',color:'#0A1A4F',border:'none',borderRadius:8,font:'800 11px Sora,sans-serif',cursor:'pointer'}}>⬇ JSON</button></div>
             <div style={{padding:14}}>
-              <div style={{font:'500 10px/1.4 Sora,sans-serif',color:'var(--muted)',marginBottom:10,background:'rgba(99,102,241,.06)',border:'1px solid rgba(99,102,241,.15)',borderRadius:6,padding:'6px 10px'}}>⏱ {fmtDutyWindow()}</div>
+              <div style={{font:'500 10px/1.4 Sora,sans-serif',color:'var(--muted)',marginBottom:10,background:'rgba(99,102,241,.06)',border:'1px solid rgba(99,102,241,.15)',borderRadius:6,padding:'6px 10px'}}>⏱ {fmtDutyWindow(agentShift)}</div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:12}}>
                 {[{l:"Today's",v:todayTix.length,c:'var(--infob)'},{l:'Resolved',v:todayTix.filter(function(t){return t.status==='resolved';}).length,c:'#22C55E'},{l:'Unresolved',v:todayTix.filter(function(t){return t.status==='unresolved';}).length,c:'#EF4444'}].map(function(k){return(
                   <div key={k.l} style={{background:'rgba(0,0,0,.1)',border:'1px solid var(--bsoft)',borderRadius:8,padding:'10px',textAlign:'center'}}>
@@ -2918,7 +2917,7 @@ function App(){
     slot:     <SlotReport agent={agent} tickets={tickets} showToast={showToast} agentShift={agentShift}/>,
     guide:    <SupportGuide agent={agent} showToast={showToast}/>,
     photos:   <ProfilePhotos showToast={showToast}/>,
-    data:     <DataScreen agent={agent} tickets={viewTix} setTickets={setTickets} showToast={showToast} agentShift={agentShift}/>,
+    data:     <DataScreen agent={agent} tickets={allTix} setTickets={setTickets} showToast={showToast} agentShift={agentShift}/>,
     sync:     <CloudSync agent={agent} tickets={tickets} setTickets={setTickets} showToast={showToast} agentShift={agentShift}/>,
     settings: <AgentSettings agent={agent} tickets={tickets} setTickets={setTickets} showToast={showToast}/>,
   };
