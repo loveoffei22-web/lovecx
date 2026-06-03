@@ -1027,13 +1027,13 @@ function MyTickets({agent,tickets,allTix,onEdit,onUpdate,onDelete,showToast,agen
 
   function getEdit(t){
     const e=editState[t.id]||{};
-    return {category:e.category!==undefined?e.category:(t.category||t.issue||''),resp:e.resp!==undefined?e.resp:(t.resp||''),status:e.status!==undefined?e.status:(t.status||'unresolved'),note:e.note!==undefined?e.note:(t.note||'')};
+    return {category:e.category!==undefined?e.category:(t.category||t.issue||''),resp:e.resp!==undefined?e.resp:(t.resp||''),status:e.status!==undefined?e.status:(t.status||'unresolved'),note:e.note!==undefined?e.note:(t.note||''),issue:e.issue!==undefined?e.issue:(t.issue||'')};
   }
   function setEdit(id,k,v){setEditState(function(s){return Object.assign({},s,{[id]:Object.assign({},s[id]||{},{[k]:v})});});}
   function toggleExpand(t){setExpanded(function(cur){return cur===t.id?null:t.id;});}
   function saveUpdate(t){
     const e=getEdit(t);
-    const updated=Object.assign({},t,{category:e.category,issue:e.category,resp:e.resp,status:e.status,note:e.note,updatedBy:agent.id,updatedAt:new Date().toISOString()});
+    const updated=Object.assign({},t,{category:e.category,issue:e.issue||e.category,resp:e.resp,status:e.status,note:e.note,updatedBy:agent.id,updatedAt:new Date().toISOString()});
     if(e.status==='resolved'&&!updated.resolvedDate)updated.resolvedDate=new Date().toISOString().slice(0,10);
     onUpdate&&onUpdate(updated);
     setEditState(function(s){const n=Object.assign({},s);delete n[t.id];return n;});
@@ -1180,11 +1180,11 @@ function MyTickets({agent,tickets,allTix,onEdit,onUpdate,onDelete,showToast,agen
                                 <div style={{font:'600 11px Sora,sans-serif',color:'var(--text)',wordBreak:'break-word'}}>{f[1]}</div>
                               </div>);})}
                           </div>
-                          {/* Complaint description */}
-                          {(t.issue||t.note)&&<div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-                            <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION</div>
-                            <div style={{font:'500 11.5px/1.6 Sora,sans-serif',color:'var(--text)',background:'rgba(0,0,0,.2)',borderRadius:7,padding:'10px 12px'}}>{t.issue||t.note}</div>
-                          </div>}
+                          {/* Complaint description — editable */}
+                          <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
+                            <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION ✏</div>
+                            <textarea className="inp" rows={3} value={getEdit(t).issue} onClick={function(e){e.stopPropagation();}} onChange={function(e){e.stopPropagation();setEdit(t.id,'issue',e.target.value);}} placeholder="Describe the complaint…" style={{resize:'vertical',fontSize:11,marginBottom:0}}/>
+                          </div>
                           {/* Editable section */}
                           <div style={{padding:'14px 16px',background:'rgba(0,0,0,.15)'}}>
                             <div style={{font:'700 9px Sora,sans-serif',color:agent.color,textTransform:'uppercase',letterSpacing:'.12em',marginBottom:12}}>✏️ UPDATE THIS TICKET</div>
@@ -1345,7 +1345,7 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
   }
 
   function getEdit(t){
-    return Object.assign({category:t.category||t.issue||'',resp:t.resp||'',status:t.status||'unresolved',note:t.note||''},editState[t.id]||{});
+    return Object.assign({category:t.category||t.issue||'',resp:t.resp||'',status:t.status||'unresolved',note:t.note||'',issue:t.issue||''},editState[t.id]||{});
   }
   function setEdit(id,k,v){
     setEditState(function(s){return Object.assign({},s,{[id]:Object.assign({},s[id]||{},({[k]:v}))});});
@@ -1354,12 +1354,12 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
     const next=expanded===t.id?null:t.id;
     setExpanded(next);
     if(next&&!editState[t.id]){
-      setEditState(function(s){return Object.assign({},s,{[t.id]:{category:t.category||t.issue||'',resp:t.resp||'',status:t.status||'unresolved',note:t.note||''}});});
+      setEditState(function(s){return Object.assign({},s,{[t.id]:{category:t.category||t.issue||'',resp:t.resp||'',status:t.status||'unresolved',note:t.note||'',issue:t.issue||''}});});
     }
   }
   function saveUpdate(t){
     const e=getEdit(t);
-    const updated=Object.assign({},t,{category:e.category,issue:e.category,resp:e.resp,status:e.status,note:e.note,updatedBy:agent.id,updatedAt:new Date().toISOString()});
+    const updated=Object.assign({},t,{category:e.category,issue:e.issue||e.category,resp:e.resp,status:e.status,note:e.note,updatedBy:agent.id,updatedAt:new Date().toISOString()});
     onUpdate(updated);
     setExpanded(null);
   }
@@ -1531,10 +1531,10 @@ function AllComplaints({agent,allTix,onUpdate,onDelete,onDeleteBulk,showToast}){
                             </div>);})}
                         </div>
                         {/* ── Complaint description ── */}
-                        {(t.issue||t.note)&&<div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-                          <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION</div>
-                          <div style={{font:'500 11.5px/1.6 Sora,sans-serif',color:'var(--text)',background:'rgba(0,0,0,.2)',borderRadius:7,padding:'10px 12px'}}>{t.issue||t.note}</div>
-                        </div>}
+                        <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
+                          <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION ✏</div>
+                          <textarea className="inp" rows={3} value={getEdit(t).issue} onClick={function(ev){ev.stopPropagation();}} onChange={function(ev){ev.stopPropagation();setEdit(t.id,'issue',ev.target.value);}} placeholder="Describe the complaint…" style={{resize:'vertical',fontSize:11,marginBottom:0}}/>
+                        </div>
                         {/* ── Editable section ── */}
                         <div style={{padding:'14px 16px',background:'rgba(0,0,0,.15)'}}>
                           <div style={{font:'700 9px Sora,sans-serif',color:agent.color,textTransform:'uppercase',letterSpacing:'.12em',marginBottom:12}}>✏️ UPDATE THIS TICKET</div>

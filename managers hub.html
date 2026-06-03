@@ -1365,7 +1365,7 @@ function DailyReport({tickets,onUpdate,onSettings}){
   // ── Inline edit state ───────────────────────────────────────────
   const[editId,setEditId]=React.useState(null);
   const[editVals,setEditVals]=React.useState({});
-  function openEdit(t){setEditId(t.id);setEditVals({status:t.status||'unresolved',category:t.category||'',resp:t.resp||t.responsible||'',note:t.note||''});}
+  function openEdit(t){setEditId(t.id);setEditVals({status:t.status||'unresolved',category:t.category||'',resp:t.resp||t.responsible||'',note:t.note||'',issue:t.issue||''});}
   function closeEdit(){setEditId(null);setEditVals({});}
   function saveRowEdit(t){
     var upd=Object.assign({},t,editVals,{updatedAt:new Date().toISOString()});
@@ -2118,11 +2118,12 @@ function AllComplaints({tickets,onUpdate,onBulkUpdate,onBatchUpdate,onDelete,sho
                                   <div style={{font:'600 11px Sora,sans-serif',color:'var(--text)',wordBreak:'break-word'}}>{f[1]}</div>
                                 </div>);})}
                             </div>
-                            {/* Complaint description */}
-                            {t.issue&&<div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-                              <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION</div>
-                              <div style={{font:'500 11.5px/1.6 Sora,sans-serif',color:'var(--text)',background:'rgba(0,0,0,.2)',borderRadius:7,padding:'10px 12px'}}>{t.issue}</div>
-                            </div>}
+                            {/* Complaint description — editable */}
+                            <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
+                              <div style={{font:'700 8.5px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.10em',marginBottom:6}}>📝 COMPLAINT DESCRIPTION ✏</div>
+                              <textarea className="inp" rows={3} value={isEditing?editVals.issue||'':(t.issue||'')} readOnly={!isEditing} onClick={function(e){e.stopPropagation();if(!isEditing)openEdit(t);}} onChange={function(e){e.stopPropagation();setEditVals(function(p){return Object.assign({},p,{issue:e.target.value});});}} placeholder="Describe the complaint…" style={{resize:'vertical',fontSize:11,marginBottom:0,cursor:isEditing?'text':'pointer',opacity:isEditing?1:.85}}/>
+                              {!isEditing&&<div style={{font:'500 9px Sora,sans-serif',color:'var(--muted)',marginTop:3}}>Click to edit</div>}
+                            </div>
                             {/* Editable section */}
                             <div style={{padding:'14px 16px',background:'rgba(0,0,0,.15)'}}>
                               <div style={{font:'700 9px Sora,sans-serif',color:'var(--ek-gold)',textTransform:'uppercase',letterSpacing:'.12em',marginBottom:12}}>✏️ UPDATE THIS TICKET</div>
