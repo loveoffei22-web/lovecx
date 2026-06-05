@@ -1,9 +1,9 @@
 # EKEDP CX Reporting Tool — Project Context
 
 ## Live Site
-**Live URL:** https://lovecx.love-offei22.workers.dev/index.html
+**Live URL:** https://ekedp-powerapp-reportstool.netlify.app/index.html
 **Repo:** loveoffei22-web/lovecx
-**Deploy branch:** main (deployed via Cloudflare Workers)
+**Deploy branch:** main (deployed via Netlify)
 **Working branch:** claude/practical-thompson-LTEad
 
 ## App Structure
